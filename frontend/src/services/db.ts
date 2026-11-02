@@ -120,10 +120,23 @@ export function setActiveDocId(id: string): void {
   localStorage.setItem(ACTIVE_DOC_KEY, id);
 }
 
-export function createNewDocument(title = 'Untitled Document', initialMarkdown = '', preset: ExportSettings['preset'] = 'academic'): PaperflowDocument {
+export function generateDocumentId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return 'doc_' + crypto.randomUUID();
+  }
+  return 'doc_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 9);
+}
+
+export const DEFAULT_MARKDOWN_TEMPLATE = `# Untitled Document\n\nStart writing your document here...\n`;
+
+export function createNewDocument(
+  title = 'Untitled Document',
+  initialMarkdown = DEFAULT_MARKDOWN_TEMPLATE,
+  preset: ExportSettings['preset'] = 'academic'
+): PaperflowDocument {
   const now = Date.now();
   return {
-    id: 'doc_' + Math.random().toString(36).substring(2, 11),
+    id: generateDocumentId(),
     title,
     markdown: initialMarkdown,
     metadata: {
@@ -153,7 +166,7 @@ export async function initializeDefaultDocuments(): Promise<PaperflowDocument> {
   // First time launch: populate with rich Physics sample document
   const sample = SAMPLE_DOCUMENTS[0];
   const initialDoc: PaperflowDocument = {
-    id: 'doc_physics_sample',
+    id: generateDocumentId(),
     title: sample.title,
     markdown: sample.markdown,
     metadata: { ...sample.metadata },

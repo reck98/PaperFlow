@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Moon,
@@ -54,6 +54,10 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(title);
+
+  useEffect(() => {
+    setTempTitle(title);
+  }, [title]);
 
   const handleTitleSubmit = () => {
     setIsEditingTitle(false);

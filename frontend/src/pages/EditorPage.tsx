@@ -20,7 +20,10 @@ import {
   deleteDocument,
   createNewDocument,
   initializeDefaultDocuments,
+  getActiveDocId,
   setActiveDocId,
+  generateDocumentId,
+  DEFAULT_DOCUMENT_SETTINGS,
 } from '../services/db';
 import { SAMPLE_DOCUMENTS } from '../samples';
 
@@ -37,11 +40,24 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   onGoHome,
   initialSampleId,
 }) => {
-  // Document state
+  // Authoritative Document State: single source of truth
   const [documents, setDocuments] = useState<PaperflowDocument[]>([]);
-  const [currentDoc, setCurrentDoc] = useState<PaperflowDocument | null>(null);
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+
+  // Persistence / Saving State
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Ref to always access the latest documents array in async operations
+  const documentsRef = useRef<PaperflowDocument[]>(documents);
+  documentsRef.current = documents;
+
+  // Ref to track activeDocumentId for closures
+  const activeDocIdRef = useRef<string | null>(activeDocumentId);
+  activeDocIdRef.current = activeDocumentId;
+
+  // Map of documentId -> debounce timeout to isolate autosave per document
+  const pendingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // UI state
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -55,248 +71,271 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
-  // Debounced save timer ref
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Derive the currently active document from the authoritative documents collection
+  const activeDocument = useMemo(() => {
+    if (!documents.length) return null;
+    if (activeDocumentId) {
+      const found = documents.find((doc) => doc.id === activeDocumentId);
+      if (found) return found;
+    }
+    return documents[0];
+  }, [documents, activeDocumentId]);
+
+  // Flush pending save for a specific document, or all pending documents
+  const flushPendingSave = useCallback(async (docId?: string | null) => {
+    if (docId) {
+      const timer = pendingTimeoutsRef.current.get(docId);
+      if (timer) {
+        clearTimeout(timer);
+        pendingTimeoutsRef.current.delete(docId);
+      }
+      const docToSave = documentsRef.current.find((d) => d.id === docId);
+      if (docToSave) {
+        setIsSaving(true);
+        await saveDocument(docToSave);
+        setIsSaving(false);
+      }
+    } else {
+      for (const [id, timer] of pendingTimeoutsRef.current.entries()) {
+        clearTimeout(timer);
+        const docToSave = documentsRef.current.find((d) => d.id === id);
+        if (docToSave) {
+          await saveDocument(docToSave);
+        }
+      }
+      pendingTimeoutsRef.current.clear();
+      setIsSaving(false);
+    }
+    setHasUnsavedChanges(pendingTimeoutsRef.current.size > 0);
+  }, []);
+
+  // Update a specific document by its ID
+  const updateDocument = useCallback(
+    (docId: string, updates: Partial<PaperflowDocument>) => {
+      setDocuments((prevDocs) => {
+        const targetDoc = prevDocs.find((d) => d.id === docId);
+        if (!targetDoc) return prevDocs;
+
+        const updatedDoc: PaperflowDocument = {
+          ...targetDoc,
+          ...updates,
+          updatedAt: Date.now(),
+        };
+
+        // Synchronize title across root and metadata if either was explicitly modified
+        if (updates.title !== undefined && (!updates.metadata || updates.metadata.title === undefined)) {
+          updatedDoc.metadata = { ...updatedDoc.metadata, title: updates.title };
+        } else if (updates.metadata?.title !== undefined && updates.title === undefined) {
+          updatedDoc.title = updates.metadata.title;
+        }
+
+        return prevDocs.map((d) => (d.id === docId ? updatedDoc : d));
+      });
+
+      setHasUnsavedChanges(true);
+
+      // Debounced autosave targeting this specific document ID
+      const existingTimer = pendingTimeoutsRef.current.get(docId);
+      if (existingTimer) clearTimeout(existingTimer);
+
+      const timer = setTimeout(async () => {
+        pendingTimeoutsRef.current.delete(docId);
+        const docToSave = documentsRef.current.find((d) => d.id === docId);
+        if (docToSave) {
+          setIsSaving(true);
+          await saveDocument(docToSave);
+          setIsSaving(false);
+        }
+        setHasUnsavedChanges(pendingTimeoutsRef.current.size > 0);
+      }, 500);
+
+      pendingTimeoutsRef.current.set(docId, timer);
+    },
+    []
+  );
 
   // 1. Initial Load from IndexedDB
   useEffect(() => {
     async function loadData() {
       const allDocs = await getAllDocuments();
-      let active: PaperflowDocument;
 
       if (initialSampleId) {
         const foundSample = SAMPLE_DOCUMENTS.find((s) => s.id === initialSampleId);
         if (foundSample) {
-          active = {
-            id: 'doc_' + Math.random().toString(36).substring(2, 11),
+          const sampleDoc: PaperflowDocument = {
+            id: generateDocumentId(),
             title: foundSample.title,
             markdown: foundSample.markdown,
             metadata: { ...foundSample.metadata },
             settings: {
+              ...DEFAULT_DOCUMENT_SETTINGS,
               preset: foundSample.preset,
-              pageSize: 'a4',
-              orientation: 'portrait',
-              margins: 'normal',
-              fontSize: '11pt',
-              lineSpacing: 1.4,
-              includeToc: false,
-              tocDepth: 3,
-              numberedHeadings: true,
-              pageNumbering: '1',
-              headerText: '',
-              footerText: '',
-              fontFamily: '',
-              twoColumn: false,
             },
             createdAt: Date.now(),
             updatedAt: Date.now(),
           };
-          await saveDocument(active);
-          const updatedDocs = await getAllDocuments();
+          await saveDocument(sampleDoc);
+          const updatedDocs = [sampleDoc, ...allDocs.filter((d) => d.id !== sampleDoc.id)];
           setDocuments(updatedDocs);
-          setCurrentDoc(active);
-          setActiveDocId(active.id);
+          setActiveDocumentId(sampleDoc.id);
+          setActiveDocId(sampleDoc.id);
           return;
         }
       }
 
       if (allDocs.length === 0) {
-        active = await initializeDefaultDocuments();
-        setDocuments([active]);
+        const initial = await initializeDefaultDocuments();
+        setDocuments([initial]);
+        setActiveDocumentId(initial.id);
+        setActiveDocId(initial.id);
       } else {
         setDocuments(allDocs);
-        active = allDocs[0];
+        const savedActiveId = getActiveDocId();
+        const activeExists = savedActiveId ? allDocs.some((d) => d.id === savedActiveId) : false;
+        const targetId = activeExists ? savedActiveId! : allDocs[0].id;
+        setActiveDocumentId(targetId);
+        setActiveDocId(targetId);
       }
-      setCurrentDoc(active);
-      setActiveDocId(active.id);
     }
 
     loadData();
   }, [initialSampleId]);
 
-  // 2. Debounced auto-save when doc content changes
-  const queueSave = useCallback((docToSave: PaperflowDocument) => {
-    setHasUnsavedChanges(true);
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      setIsSaving(true);
-      await saveDocument(docToSave);
-      setIsSaving(false);
-      setHasUnsavedChanges(false);
-
-      // Update in documents list
-      setDocuments((prev) =>
-        prev.map((d) => (d.id === docToSave.id ? { ...docToSave, updatedAt: Date.now() } : d))
-      );
-    }, 600);
-  }, []);
-
-  // Update Markdown text
-  const handleMarkdownChange = useCallback(
-    (newMarkdown: string) => {
-      if (!currentDoc) return;
-      const updated: PaperflowDocument = {
-        ...currentDoc,
-        markdown: newMarkdown,
-      };
-      setCurrentDoc(updated);
-      queueSave(updated);
-    },
-    [currentDoc, queueSave]
-  );
-
-  // Update Title
-  const handleTitleChange = useCallback(
-    (newTitle: string) => {
-      if (!currentDoc) return;
-      const updated: PaperflowDocument = {
-        ...currentDoc,
-        title: newTitle,
-        metadata: {
-          ...currentDoc.metadata,
-          title: newTitle,
-        },
-      };
-      setCurrentDoc(updated);
-      queueSave(updated);
-    },
-    [currentDoc, queueSave]
-  );
-
-  // Update Preset
-  const handlePresetChange = useCallback(
-    (newPreset: DocumentPreset) => {
-      if (!currentDoc) return;
-      const updated: PaperflowDocument = {
-        ...currentDoc,
-        settings: {
-          ...currentDoc.settings,
-          preset: newPreset,
-        },
-      };
-      setCurrentDoc(updated);
-      queueSave(updated);
-    },
-    [currentDoc, queueSave]
-  );
-
-  // Update Settings
-  const handleUpdateSettings = useCallback(
-    (newSettings: ExportSettings) => {
-      if (!currentDoc) return;
-      const updated: PaperflowDocument = {
-        ...currentDoc,
-        settings: newSettings,
-      };
-      setCurrentDoc(updated);
-      queueSave(updated);
-    },
-    [currentDoc, queueSave]
-  );
-
-  // Update Metadata
-  const handleUpdateMetadata = useCallback(
-    (newMetadata: DocumentMetadata) => {
-      if (!currentDoc) return;
-      const updated: PaperflowDocument = {
-        ...currentDoc,
-        title: newMetadata.title || currentDoc.title,
-        metadata: newMetadata,
-      };
-      setCurrentDoc(updated);
-      queueSave(updated);
-    },
-    [currentDoc, queueSave]
-  );
-
-  // Select document
-  const handleSelectDoc = async (id: string) => {
-    const doc = documents.find((d) => d.id === id);
-    if (doc) {
-      setCurrentDoc(doc);
-      setActiveDocId(doc.id);
-    }
-  };
-
-  // Create new document
-  const handleNewDoc = async () => {
-    const newDoc = createNewDocument('Untitled Document', '# Untitled Document\n\nWrite your thoughts or equations here...\n');
-    await saveDocument(newDoc);
-    const updated = await getAllDocuments();
-    setDocuments(updated);
-    setCurrentDoc(newDoc);
-    setActiveDocId(newDoc.id);
-  };
-
-  // Load a sample document
-  const handleLoadSample = async (sampleId: string) => {
-    const sample = SAMPLE_DOCUMENTS.find((s) => s.id === sampleId);
-    if (!sample) return;
-
-    const newDoc: PaperflowDocument = {
-      id: 'doc_' + Math.random().toString(36).substring(2, 11),
-      title: sample.title,
-      markdown: sample.markdown,
-      metadata: { ...sample.metadata },
-      settings: {
-        preset: sample.preset,
-        pageSize: 'a4',
-        orientation: 'portrait',
-        margins: 'normal',
-        fontSize: '11pt',
-        lineSpacing: 1.4,
-        includeToc: false,
-        tocDepth: 3,
-        numberedHeadings: true,
-        pageNumbering: '1',
-        headerText: '',
-        footerText: '',
-        fontFamily: '',
-        twoColumn: false,
-      },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+  // Flush saves on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      flushPendingSave();
     };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      flushPendingSave();
+    };
+  }, [flushPendingSave]);
 
+  // Document selection handler
+  const handleSelectDoc = useCallback(
+    async (id: string) => {
+      if (id === activeDocumentId) return;
+
+      const exists = documentsRef.current.some((d) => d.id === id);
+      if (!exists) return;
+
+      // Flush any pending save on current document before switching
+      if (activeDocIdRef.current) {
+        await flushPendingSave(activeDocIdRef.current);
+      }
+
+      setActiveDocumentId(id);
+      setActiveDocId(id);
+    },
+    [activeDocumentId, flushPendingSave]
+  );
+
+  // Create brand new document
+  const handleNewDoc = useCallback(async () => {
+    // Flush current document edits first
+    if (activeDocIdRef.current) {
+      await flushPendingSave(activeDocIdRef.current);
+    }
+
+    const newDoc = createNewDocument();
     await saveDocument(newDoc);
-    const updated = await getAllDocuments();
-    setDocuments(updated);
-    setCurrentDoc(newDoc);
+
+    setDocuments((prev) => [newDoc, ...prev]);
+    setActiveDocumentId(newDoc.id);
     setActiveDocId(newDoc.id);
-  };
+  }, [flushPendingSave]);
+
+  // Load a sample document as a fresh independent document
+  const handleLoadSample = useCallback(
+    async (sampleId: string) => {
+      const sample = SAMPLE_DOCUMENTS.find((s) => s.id === sampleId);
+      if (!sample) return;
+
+      if (activeDocIdRef.current) {
+        await flushPendingSave(activeDocIdRef.current);
+      }
+
+      const newDoc: PaperflowDocument = {
+        id: generateDocumentId(),
+        title: sample.title,
+        markdown: sample.markdown,
+        metadata: { ...sample.metadata },
+        settings: {
+          ...DEFAULT_DOCUMENT_SETTINGS,
+          preset: sample.preset,
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await saveDocument(newDoc);
+      setDocuments((prev) => [newDoc, ...prev]);
+      setActiveDocumentId(newDoc.id);
+      setActiveDocId(newDoc.id);
+    },
+    [flushPendingSave]
+  );
 
   // Handle uploaded Markdown file
-  const handleUploadSuccess = async (filename: string, content: string) => {
-    const cleanTitle = filename.replace(/\.(md|markdown|txt)$/i, '');
-    const newDoc = createNewDocument(cleanTitle, content);
-    newDoc.metadata.title = cleanTitle;
-    await saveDocument(newDoc);
-    const updated = await getAllDocuments();
-    setDocuments(updated);
-    setCurrentDoc(newDoc);
-    setActiveDocId(newDoc.id);
-  };
+  const handleUploadSuccess = useCallback(
+    async (filename: string, content: string) => {
+      if (activeDocIdRef.current) {
+        await flushPendingSave(activeDocIdRef.current);
+      }
+
+      const cleanTitle = filename.replace(/\.(md|markdown|txt)$/i, '') || 'Uploaded Document';
+      const newDoc = createNewDocument(cleanTitle, content);
+      newDoc.metadata.title = cleanTitle;
+
+      await saveDocument(newDoc);
+      setDocuments((prev) => [newDoc, ...prev]);
+      setActiveDocumentId(newDoc.id);
+      setActiveDocId(newDoc.id);
+    },
+    [flushPendingSave]
+  );
 
   // Delete document
-  const handleDeleteDoc = async (id: string) => {
-    await deleteDocument(id);
-    const updated = await getAllDocuments();
-    setDocuments(updated);
-    if (currentDoc?.id === id && updated.length > 0) {
-      setCurrentDoc(updated[0]);
-      setActiveDocId(updated[0].id);
-    }
-  };
+  const handleDeleteDoc = useCallback(
+    async (id: string) => {
+      // Clear pending timer for this document
+      const timer = pendingTimeoutsRef.current.get(id);
+      if (timer) {
+        clearTimeout(timer);
+        pendingTimeoutsRef.current.delete(id);
+      }
 
-  // Document stats & outline
+      await deleteDocument(id);
+      const remaining = documentsRef.current.filter((d) => d.id !== id);
+
+      if (remaining.length === 0) {
+        const newDoc = createNewDocument();
+        await saveDocument(newDoc);
+        setDocuments([newDoc]);
+        setActiveDocumentId(newDoc.id);
+        setActiveDocId(newDoc.id);
+      } else {
+        setDocuments(remaining);
+        if (activeDocIdRef.current === id) {
+          const nextId = remaining[0].id;
+          setActiveDocumentId(nextId);
+          setActiveDocId(nextId);
+        }
+      }
+    },
+    []
+  );
+
+  // Document stats & outline derived from authoritative active document
   const { wordCount, charCount, outline } = useMemo(() => {
-    const md = currentDoc?.markdown || '';
+    const md = activeDocument?.markdown || '';
     const words = md.trim() ? md.trim().split(/\s+/).length : 0;
     const chars = md.length;
     const out = extractOutline(md);
     return { wordCount: words, charCount: chars, outline: out };
-  }, [currentDoc?.markdown]);
+  }, [activeDocument?.markdown]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -310,17 +349,15 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         setIsUploadOpen(true);
       } else if (isMod && e.key === 's') {
         e.preventDefault();
-        if (currentDoc) {
-          saveDocument(currentDoc).then(() => {
-            setHasUnsavedChanges(false);
-          });
+        if (activeDocIdRef.current) {
+          flushPendingSave(activeDocIdRef.current);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentDoc]);
+  }, [flushPendingSave]);
 
   // Resizable split-pane handlers
   const handleSplitterMouseDown = (e: React.MouseEvent) => {
@@ -347,7 +384,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     document.removeEventListener('mouseup', handleSplitterMouseUp);
   }, [handleSplitterMouseMove]);
 
-  if (!currentDoc) {
+  if (!activeDocument) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-[#0c0e0f] text-gray-500 font-sans text-xs">
         Loading document...
@@ -359,10 +396,14 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-[#faf9f6] text-[#141716] dark:bg-[#0c0e0f] dark:text-[#ededed] font-sans">
       {/* Header Bar */}
       <Header
-        title={currentDoc.title}
-        onTitleChange={handleTitleChange}
-        preset={currentDoc.settings.preset}
-        onPresetChange={handlePresetChange}
+        title={activeDocument.title}
+        onTitleChange={(title) => updateDocument(activeDocument.id, { title })}
+        preset={activeDocument.settings.preset}
+        onPresetChange={(preset) =>
+          updateDocument(activeDocument.id, {
+            settings: { ...activeDocument.settings, preset },
+          })
+        }
         isDarkMode={isDarkMode}
         onToggleTheme={onToggleTheme}
         viewMode={viewMode}
@@ -382,7 +423,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(!sidebarOpen)}
           documents={documents}
-          activeDocId={currentDoc.id}
+          activeDocId={activeDocument.id}
           onSelectDoc={handleSelectDoc}
           onNewDoc={handleNewDoc}
           onLoadSample={handleLoadSample}
@@ -404,8 +445,10 @@ export const EditorPage: React.FC<EditorPageProps> = ({
               className="h-full flex flex-col bg-[#faf9f6] dark:bg-[#0e1012] overflow-hidden"
             >
               <CodeEditor
-                value={currentDoc.markdown}
-                onChange={handleMarkdownChange}
+                key={activeDocument.id}
+                documentId={activeDocument.id}
+                value={activeDocument.markdown}
+                onChange={(markdown) => updateDocument(activeDocument.id, { markdown })}
                 isDarkMode={isDarkMode}
                 onDropFile={(file) => {
                   const reader = new FileReader();
@@ -438,9 +481,9 @@ export const EditorPage: React.FC<EditorPageProps> = ({
               className="h-full flex flex-col overflow-hidden"
             >
               <LivePreview
-                markdown={currentDoc.markdown}
-                metadata={currentDoc.metadata}
-                settings={currentDoc.settings}
+                markdown={activeDocument.markdown}
+                metadata={activeDocument.metadata}
+                settings={activeDocument.settings}
               />
             </div>
           )}
@@ -451,10 +494,12 @@ export const EditorPage: React.FC<EditorPageProps> = ({
       <ExportModal
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
-        markdown={currentDoc.markdown}
-        metadata={currentDoc.metadata}
-        settings={currentDoc.settings}
-        onUpdateSettings={handleUpdateSettings}
+        markdown={activeDocument.markdown}
+        metadata={activeDocument.metadata}
+        settings={activeDocument.settings}
+        onUpdateSettings={(newSettings) =>
+          updateDocument(activeDocument.id, { settings: newSettings })
+        }
         wordCount={wordCount}
       />
 
@@ -467,8 +512,13 @@ export const EditorPage: React.FC<EditorPageProps> = ({
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        metadata={currentDoc.metadata}
-        onUpdateMetadata={handleUpdateMetadata}
+        metadata={activeDocument.metadata}
+        onUpdateMetadata={(newMetadata) =>
+          updateDocument(activeDocument.id, {
+            metadata: newMetadata,
+            title: newMetadata.title || activeDocument.title,
+          })
+        }
       />
 
       <ShortcutsModal

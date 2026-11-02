@@ -1,12 +1,29 @@
 import React, { useEffect, useRef } from 'react';
-import { EditorState } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view';
+import { EditorState, Extension } from '@codemirror/state';
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLineGutter,
+  highlightSpecialChars,
+  drawSelection,
+  dropCursor,
+  rectangularSelection,
+  crosshairCursor,
+  highlightActiveLine,
+} from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
-import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, indentOnInput } from '@codemirror/language';
+import {
+  syntaxHighlighting,
+  defaultHighlightStyle,
+  bracketMatching,
+  indentOnInput,
+} from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
 
 interface CodeEditorProps {
+  documentId?: string;
   value: string;
   onChange: (value: string) => void;
   isDarkMode: boolean;
@@ -15,6 +32,7 @@ interface CodeEditorProps {
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
+  documentId,
   value,
   onChange,
   isDarkMode,
@@ -23,12 +41,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorView | null>(null);
-  const isInternalChangeRef = useRef(false);
+  const currentDocIdRef = useRef<string | undefined>(documentId);
+  const isExternalDispatchRef = useRef(false);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
+  // Keep references to latest callbacks to avoid stale closures
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
-    const baseTheme = EditorView.theme({
+  const onExportPdfRef = useRef(onExportPdf);
+  onExportPdfRef.current = onExportPdf;
+
+  const getBaseTheme = (darkMode: boolean) =>
+    EditorView.theme({
       '&': {
         height: '100%',
         fontSize: '13.5px',
@@ -40,41 +64,61 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       },
       '.cm-content': {
         padding: '16px 0',
-        caretColor: isDarkMode ? '#f59e0b' : '#b45309',
+        caretColor: darkMode ? '#f59e0b' : '#b45309',
       },
       '.cm-line': {
         padding: '0 16px',
       },
       '.cm-gutters': {
         backgroundColor: 'transparent',
-        borderRight: '1px solid ' + (isDarkMode ? '#272b30' : '#e5e3dd'),
-        color: isDarkMode ? '#6b7280' : '#9ca3af',
+        borderRight: '1px solid ' + (darkMode ? '#272b30' : '#e5e3dd'),
+        color: darkMode ? '#6b7280' : '#9ca3af',
         paddingRight: '6px',
       },
       '.cm-activeLine': {
-        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+        backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
       },
       '.cm-activeLineGutter': {
         backgroundColor: 'transparent',
-        color: isDarkMode ? '#f59e0b' : '#b45309',
+        color: darkMode ? '#f59e0b' : '#b45309',
         fontWeight: 'bold',
       },
       '&.cm-focused .cm-cursor': {
-        borderLeftColor: isDarkMode ? '#f59e0b' : '#b45309',
+        borderLeftColor: darkMode ? '#f59e0b' : '#b45309',
         borderLeftWidth: '2px',
       },
       '&.cm-focused .cm-selectionBackground, ::selection': {
-        backgroundColor: isDarkMode ? 'rgba(217, 119, 6, 0.25) !important' : 'rgba(251, 191, 36, 0.3) !important',
+        backgroundColor: darkMode
+          ? 'rgba(217, 119, 6, 0.25) !important'
+          : 'rgba(251, 191, 36, 0.3) !important',
       },
     });
 
-    const customKeymaps = keymap.of([
+  const buildExtensions = (darkMode: boolean): Extension[] => [
+    lineNumbers(),
+    highlightActiveLineGutter(),
+    highlightSpecialChars(),
+    history(),
+    drawSelection(),
+    dropCursor(),
+    EditorState.allowMultipleSelections.of(true),
+    indentOnInput(),
+    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    bracketMatching(),
+    rectangularSelection(),
+    crosshairCursor(),
+    highlightActiveLine(),
+    markdown(),
+    EditorView.lineWrapping,
+    getBaseTheme(darkMode),
+    darkMode ? oneDark : [],
+    keymap.of([
       indentWithTab,
       {
         key: 'Mod-Enter',
         run: () => {
-          if (onExportPdf) {
-            onExportPdf();
+          if (onExportPdfRef.current) {
+            onExportPdfRef.current();
             return true;
           }
           return false;
@@ -82,37 +126,23 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       },
       ...defaultKeymap,
       ...historyKeymap,
-    ]);
+    ]),
+    EditorView.updateListener.of((update) => {
+      if (update.docChanged && !isExternalDispatchRef.current) {
+        onChangeRef.current(update.state.doc.toString());
+      }
+    }),
+  ];
+
+  // Initialize CodeMirror instance
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    currentDocIdRef.current = documentId;
 
     const state = EditorState.create({
       doc: value,
-      extensions: [
-        lineNumbers(),
-        highlightActiveLineGutter(),
-        highlightSpecialChars(),
-        history(),
-        drawSelection(),
-        dropCursor(),
-        EditorState.allowMultipleSelections.of(true),
-        indentOnInput(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        bracketMatching(),
-        rectangularSelection(),
-        crosshairCursor(),
-        highlightActiveLine(),
-        markdown(),
-        EditorView.lineWrapping,
-        baseTheme,
-        isDarkMode ? oneDark : [],
-        customKeymaps,
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            isInternalChangeRef.current = true;
-            onChange(update.state.doc.toString());
-            isInternalChangeRef.current = false;
-          }
-        }),
-      ],
+      extensions: buildExtensions(isDarkMode),
     });
 
     const view = new EditorView({
@@ -128,17 +158,39 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     };
   }, [isDarkMode]);
 
-  // Sync external changes (e.g., loading a sample or uploading a file)
+  // Synchronize document changes safely
   useEffect(() => {
-    if (editorRef.current && !isInternalChangeRef.current) {
-      const currentDoc = editorRef.current.state.doc.toString();
-      if (currentDoc !== value) {
-        editorRef.current.dispatch({
-          changes: { from: 0, to: currentDoc.length, insert: value },
+    if (!editorRef.current) return;
+
+    // If document changed, cleanly reset the editor state for the new document
+    if (documentId !== undefined && currentDocIdRef.current !== documentId) {
+      currentDocIdRef.current = documentId;
+      isExternalDispatchRef.current = true;
+      try {
+        const newState = EditorState.create({
+          doc: value,
+          extensions: buildExtensions(isDarkMode),
         });
+        editorRef.current.setState(newState);
+      } finally {
+        isExternalDispatchRef.current = false;
+      }
+      return;
+    }
+
+    // If same document, sync any external value change without losing cursor/history if possible
+    const currentText = editorRef.current.state.doc.toString();
+    if (currentText !== value) {
+      isExternalDispatchRef.current = true;
+      try {
+        editorRef.current.dispatch({
+          changes: { from: 0, to: currentText.length, insert: value },
+        });
+      } finally {
+        isExternalDispatchRef.current = false;
       }
     }
-  }, [value]);
+  }, [documentId, value, isDarkMode]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();

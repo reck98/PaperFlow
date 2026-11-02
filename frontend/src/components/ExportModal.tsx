@@ -46,6 +46,19 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     };
   }, [pdfUrl]);
 
+  // Reset modal state when closed so subsequent exports start fresh
+  useEffect(() => {
+    if (!isOpen) {
+      setPdfBlob(null);
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+        setPdfUrl(null);
+      }
+      setActiveTab('configure');
+      setError(null);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleGenerate = async () => {
