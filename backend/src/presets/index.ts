@@ -115,11 +115,8 @@ export function generateTypstWrapper(
 )
 
 #set heading(numbering: ${headingNumbering})
-#show heading: it => [
-  #v(1.2em)
-  #text(weight: 600, fill: rgb("#111827"))[#it]
-  #v(0.6em)
-]
+#show heading: set text(weight: 600, fill: rgb("#111827"))
+#show heading: set block(above: 1.4em, below: 0.8em, sticky: true)
 
 #let horizontalrule = [
   #v(0.8em)
@@ -128,6 +125,24 @@ export function generateTypstWrapper(
 ]
 
 #set math.equation(numbering: ${equationNumbering})
+
+// Prevent nested equation numbering inside boxed equations and inline math
+#show box: it => {
+  set math.equation(numbering: none)
+  it
+}
+#show rect: it => {
+  set math.equation(numbering: none)
+  it
+}
+#show math.equation.where(block: false): set math.equation(numbering: none)
+
+// Prevent equation clipping across page breaks by keeping display equation blocks intact
+#show math.equation.where(block: true): set block(
+  breakable: false,
+  above: 1.2em,
+  below: 1.2em,
+)
 
 // Clean syntax-highlighted code block styling
 #show raw.where(block: true): it => block(

@@ -231,6 +231,36 @@ ${Array.from({ length: 8 }, (_, i) => `### Section ${i + 3}\n\nParagraph text de
   }
   assert(caughtError, 'Invalid settings properly caught and rejected');
 
+  // Test 8: Mathematical Regression Suite Fixture Across All Presets
+  console.log('\n--- Test 8: Mathematical Regression Suite (>=3 pages, >=15 equations) ---');
+  const regressionFixturePath = path.resolve(__dirname, '../../../tests/fixtures/mathematical-regression.md');
+  assert(fs.existsSync(regressionFixturePath), 'Regression fixture tests/fixtures/mathematical-regression.md exists');
+  const regressionMd = fs.readFileSync(regressionFixturePath, 'utf-8');
+
+  for (const preset of presets) {
+    const res = await generatePdf({
+      markdown: regressionMd,
+      metadata: {
+        title: 'Mathematical Typesetting and Layout Regression Suite',
+        subtitle: 'Evaluation of Native Vector Equations, Numbering, and Pagination',
+        author: 'Paperflow Validation Team',
+        date: 'November 2026',
+        abstract: 'A rigorous verification benchmark for mathematical typesetting, equation numbering, and boundary pagination across academic, technical, minimal, and research presets.',
+      },
+      settings: {
+        ...DEFAULT_SETTINGS,
+        preset,
+        twoColumn: preset === 'research',
+        includeToc: true,
+      },
+    });
+
+    assert(res.buffer.length > 50000, `Preset '${preset}' generated comprehensive PDF (${res.buffer.length} bytes)`);
+    assert(res.typstSource.includes('$ { s_1'), `Preset '${preset}' correctly converted mathematical set into Typst $ { s_1 ... } $`);
+    assert(res.typstSource.includes('compute_frequency_offset'), `Preset '${preset}' preserves fenced code blocks verbatim`);
+    assert(res.typstSource.includes('#show box: it => {'), `Preset '${preset}' includes boxed equation numbering fix`);
+  }
+
   console.log('\n======================================================');
   console.log(`Results: ${passedTests} / ${totalTests} assertions passed (${failedTests} failed)`);
   console.log('======================================================\n');

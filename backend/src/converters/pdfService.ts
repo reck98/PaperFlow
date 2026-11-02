@@ -10,6 +10,73 @@ import { generateTypstWrapper } from '../presets/index.js';
 
 const execFileAsync = promisify(execFile);
 
+export function normalizeMathInner(inner: string): string {
+  return inner
+    // 1. Double-escaped braces for sets: \\{ -> \{ and \\} -> \}
+    .replace(/\\\\\{/g, '\\{')
+    .replace(/\\\\\}/g, '\\}')
+    // 2. Double-escaped pipe: \\| -> \|
+    .replace(/\\\\\|/g, '\\|')
+    // 3. Double-escaped row breaks: \\\\ before newline, space, or end of environment -> \\
+    .replace(/\\\\\\\\(?=\s*(?:\r?\n|&|\\end|$))/g, '\\\\')
+    // 4. Double-escaped LaTeX commands: \\alpha -> \alpha, \\sum -> \sum, \\vec -> \vec, \\boxed -> \boxed, etc.
+    .replace(/\\\\([a-zA-Z]+)/g, '\\$1')
+    // 5. Collapse internal blank lines which cause Pandoc's TeX math parser to abort
+    .replace(/\r?\n\s*\r?\n/g, '\n');
+}
+
+export function preprocessMathForPandoc(markdown: string): string {
+  // 1. Protect fenced code blocks (``` and ~~~) and inline code (`) so math regexes never touch code snippets
+  const codeBlocks: { placeholder: string; original: string }[] = [];
+  let processed = markdown.replace(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`)/g, (match) => {
+    const placeholder = `PAPERFLOWCODEBLOCK${codeBlocks.length}END`;
+    codeBlocks.push({ placeholder, original: match });
+    return placeholder;
+  });
+
+  // 2. Safe normalization of unambiguous double-escaped outer delimiters outside code blocks
+  processed = processed.replace(/\\\\\[([\s\S]*?)\\\\\]/g, (_m, inner) => `\\[${normalizeMathInner(inner)}\\]`);
+  processed = processed.replace(/\\\\\(([\s\S]*?)\\\\\)/g, (_m, inner) => `\\(${normalizeMathInner(inner)}\\)`);
+
+  // 3. Normalize single-backslash display math \[ ... \]
+  processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_m, inner) => `\\[${normalizeMathInner(inner)}\\]`);
+
+  // 4. Normalize double dollar display math $$ ... $$
+  processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_m, inner) => `$$${normalizeMathInner(inner)}$$`);
+
+  // 5. Protect display math blocks before wrapping standalone environments
+  const protectedMathBlocks: { placeholder: string; original: string }[] = [];
+  processed = processed.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\])/g, (match) => {
+    const placeholder = `PAPERFLOWMATHBLOCK${protectedMathBlocks.length}END`;
+    protectedMathBlocks.push({ placeholder, original: match });
+    return placeholder;
+  });
+
+  // 6. Wrap standalone LaTeX environments in \[ ... \]
+  processed = processed.replace(
+    /(\\begin\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|aligned|alignedat|gathered|align\*?|gather\*?|cases|dcases|rcases|equation\*?)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|aligned|alignedat|gathered|align\*?|gather\*?|cases|dcases|rcases|equation\*?)\})/g,
+    (_m, env) => `\n\n\\[\n${normalizeMathInner(env)}\n\\]\n\n`
+  );
+
+  // 7. Restore protected display math blocks
+  for (const b of protectedMathBlocks) {
+    processed = processed.replace(b.placeholder, () => b.original);
+  }
+
+  // 8. Normalize inline math \( ... \)
+  processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_m, inner) => `\\(${normalizeMathInner(inner)}\\)`);
+
+  // 9. Normalize inline math $ ... $ (excluding $$)
+  processed = processed.replace(/(?<!\$)\$(?!\$)([^\$\n]+?)(?<!\$)\$(?!\$)/g, (_m, inner) => `$${normalizeMathInner(inner)}$`);
+
+  // 10. Restore protected code blocks using functional replacement to prevent $ interpretation
+  for (const item of codeBlocks) {
+    processed = processed.replace(item.placeholder, () => item.original);
+  }
+
+  return processed;
+}
+
 export const DEFAULT_SETTINGS: ExportSettings = {
   preset: 'academic',
   pageSize: 'a4',
@@ -60,42 +127,8 @@ export async function generatePdf(request: ExportPdfRequest): Promise<{ buffer: 
       return `![${alt}](${imgFileName})`;
     });
 
-    // 2. Protect fenced code blocks (``` and ~~~) and inline code (`) so math regexes never touch code snippets
-    const codeBlocks: { placeholder: string; original: string }[] = [];
-    processedMarkdown = processedMarkdown.replace(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`)/g, (match) => {
-      const placeholder = `PAPERFLOWCODEBLOCK${codeBlocks.length}END`;
-      codeBlocks.push({ placeholder, original: match });
-      return placeholder;
-    });
-
-    // 3. Safe normalization of unambiguous double-escaped outer delimiters outside code blocks
-    // e.g. \\[ ... \\] -> \[ ... \] and \\( ... \\) -> \( ... \)
-    processedMarkdown = processedMarkdown.replace(/\\\\\[([\s\S]*?)\\\\\]/g, '\\[$1\\]');
-    processedMarkdown = processedMarkdown.replace(/\\\\\(([\s\S]*?)\\\\\)/g, '\\($1\\)');
-
-    // 4. Protect existing display math blocks ($$...$$ and \[...\]) before wrapping standalone environments
-    const protectedMathBlocks: { placeholder: string; original: string }[] = [];
-    processedMarkdown = processedMarkdown.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\])/g, (match) => {
-      const placeholder = `PAPERFLOWMATHBLOCK${protectedMathBlocks.length}END`;
-      protectedMathBlocks.push({ placeholder, original: match });
-      return placeholder;
-    });
-
-    // 5. Wrap standalone LaTeX environments (matrix, pmatrix, bmatrix, cases, aligned, align, gather, etc.) in \[ ... \]
-    processedMarkdown = processedMarkdown.replace(
-      /(\\begin\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|aligned|alignedat|gathered|align\*?|gather\*?|cases|dcases|rcases|equation\*?)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|aligned|alignedat|gathered|align\*?|gather\*?|cases|dcases|rcases|equation\*?)\})/g,
-      '\n\n\\[\n$1\n\\]\n\n'
-    );
-
-    // 6. Restore protected math blocks
-    for (const b of protectedMathBlocks) {
-      processedMarkdown = processedMarkdown.replace(b.placeholder, () => b.original);
-    }
-
-    // 7. Restore protected code blocks using functional replacement to prevent $ interpretation
-    for (const item of codeBlocks) {
-      processedMarkdown = processedMarkdown.replace(item.placeholder, () => item.original);
-    }
+    // 2. Preprocess mathematical notation, escaping, delimiters, and environments
+    processedMarkdown = preprocessMathForPandoc(processedMarkdown);
 
     const inputMdPath = path.join(tempDir, 'input.md');
     fs.writeFileSync(inputMdPath, processedMarkdown, 'utf-8');

@@ -8,7 +8,8 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "tsx src/test/pdfPipeline.test.ts"
+    "test": "tsx src/test/pdfPipeline.test.ts",
+    "test:regression": "tsx src/test/testRegressionPresets.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
