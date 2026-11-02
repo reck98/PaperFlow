@@ -2,6 +2,7 @@
   "name": "paperflow-backend",
   "version": "1.0.0",
   "description": "Paperflow PDF conversion backend engine",
+  "license": "MIT",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",

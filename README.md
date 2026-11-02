@@ -6,6 +6,7 @@
 
 A modern, high-performance Markdown editor and vector PDF publishing tool with first-class LaTeX mathematical typesetting.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Typst](https://img.shields.io/badge/Typst-0.13-239DAD?logo=typst&logoColor=white)](https://typst.app/)
@@ -198,6 +199,7 @@ PaperFlow/
 ├── .dockerignore
 ├── .gitignore
 ├── docker-compose.yml        # Root Docker Compose orchestrator
+├── LICENSE                   # MIT License
 ├── package.json              # Root workspace scripts orchestrator
 └── README.md
 ```
@@ -532,4 +534,4 @@ Contributions are welcome. To contribute:
 
 ## License
 
-Licensing for this project is currently under review / to be determined. Please consult repository maintainers or check [GitHub Issues](https://github.com/reck98/PaperFlow/issues) for updates before commercial distribution.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for the full text.

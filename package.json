@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Paperflow - From Markdown to beautifully typeset documents",
+  "license": "MIT",
   "scripts": {
     "dev": "pnpm --filter paperflow-backend dev & pnpm --filter paperflow-frontend dev",
     "dev:backend": "pnpm --filter paperflow-backend dev",
