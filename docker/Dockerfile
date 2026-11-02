@@ -1,13 +1,13 @@
 # ==============================================================================
 # Paperflow Production Dockerfile
-# Multi-stage build with full Pandoc, Typst, and XeLaTeX typesetting support
+# Multi-stage build with full Pandoc and Typst vector typesetting support
 # ==============================================================================
 
 # --- Stage 1: Build Frontend ---
 FROM node:22-slim AS frontend-builder
 WORKDIR /app/frontend
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
 RUN pnpm install
@@ -19,7 +19,7 @@ RUN pnpm run build
 FROM node:22-slim AS backend-builder
 WORKDIR /app/backend
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 COPY backend/package.json backend/pnpm-lock.yaml* ./
 RUN pnpm install
@@ -34,19 +34,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
     NODE_ENV=production \
     PORT=3000
 
-# 1. Install Node.js 22, Pandoc, XeLaTeX, Fonts, and curl/ca-certificates
+# 1. Install Node.js 22, Pandoc, Fonts, xz-utils, and curl/ca-certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
+    xz-utils \
     pandoc \
-    texlive-xetex \
-    texlive-latex-recommended \
-    texlive-latex-extra \
-    texlive-fonts-recommended \
     fonts-dejavu \
     fonts-lmodern \
-    fonts-libertine \
+    fonts-linuxlibertine \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
@@ -82,7 +79,6 @@ COPY --from=frontend-builder --chown=paperflow:paperflow /app/frontend/dist ./fr
 # 5. Verify installed typesetting engines
 RUN pandoc --version && \
     typst --version && \
-    xelatex --version && \
     node --version
 
 USER paperflow

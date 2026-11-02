@@ -1,0 +1,22 @@
+# Ignore local binaries (Windows executables)
+bin/
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build artifacts
+dist/
+**/dist/
+build/
+**/build/
+
+# Git
+.git/
+.gitignore
+
+# Environment & local files
+.env
+.env.local
+.taste-skill/
+samples/*.pdf
