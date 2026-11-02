@@ -47,24 +47,55 @@ function findBinary(binaryName: string, windowsExeName: string): string {
 export const PANDOC_BIN = findBinary('pandoc', 'pandoc.exe');
 export const TYPST_BIN = findBinary('typst', 'typst.exe');
 
-export function checkBinaries(): { pandoc: boolean; typst: boolean; pandocPath: string; typstPath: string } {
+export interface BinaryCheckResult {
+  pandoc: boolean;
+  typst: boolean;
+  pandocSupportsTypst: boolean;
+  pandocPath: string;
+  typstPath: string;
+  pandocVersion?: string;
+  typstVersion?: string;
+  error?: string;
+}
+
+export function checkBinaries(): BinaryCheckResult {
   let pandocOk = false;
   let typstOk = false;
+  let pandocSupportsTypst = false;
+  let pandocVersion: string | undefined;
+  let typstVersion: string | undefined;
 
   try {
-    execSync(`"${PANDOC_BIN}" --version`, { stdio: 'ignore' });
+    const versionOutput = execSync(`"${PANDOC_BIN}" --version`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+    const firstLine = versionOutput.split(/\r?\n/)[0].trim();
+    pandocVersion = firstLine;
     pandocOk = true;
-  } catch {}
+
+    // Verify typst writer support in pandoc
+    const formatsOutput = execSync(`"${PANDOC_BIN}" --list-output-formats`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+    const formats = formatsOutput.split(/\r?\n/).map((f) => f.trim().toLowerCase());
+    if (formats.includes('typst')) {
+      pandocSupportsTypst = true;
+    }
+  } catch (err: any) {
+    // Pandoc failed
+  }
 
   try {
-    execSync(`"${TYPST_BIN}" --version`, { stdio: 'ignore' });
+    const typstVerOutput = execSync(`"${TYPST_BIN}" --version`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+    typstVersion = typstVerOutput.split(/\r?\n/)[0].trim();
     typstOk = true;
-  } catch {}
+  } catch (err: any) {
+    // Typst failed
+  }
 
   return {
     pandoc: pandocOk,
     typst: typstOk,
+    pandocSupportsTypst,
     pandocPath: PANDOC_BIN,
     typstPath: TYPST_BIN,
+    pandocVersion,
+    typstVersion,
   };
 }

@@ -109,10 +109,14 @@ exportRouter.get('/presets', (_req: Request, res: Response) => {
 
 exportRouter.get('/health', (_req: Request, res: Response) => {
   const binaryStatus = checkBinaries();
-  res.json({
-    status: binaryStatus.pandoc && binaryStatus.typst ? 'healthy' : 'degraded',
+  const isHealthy = binaryStatus.pandoc && binaryStatus.typst && binaryStatus.pandocSupportsTypst;
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'healthy' : 'degraded',
     pandoc: binaryStatus.pandoc,
     typst: binaryStatus.typst,
+    pandocSupportsTypst: binaryStatus.pandocSupportsTypst,
+    pandocVersion: binaryStatus.pandocVersion,
+    typstVersion: binaryStatus.typstVersion,
     pandocPath: binaryStatus.pandocPath,
     typstPath: binaryStatus.typstPath,
     timestamp: new Date().toISOString(),

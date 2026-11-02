@@ -9,7 +9,7 @@
     "dev:backend": "pnpm --filter paperflow-backend dev",
     "dev:frontend": "pnpm --filter paperflow-frontend dev",
     "build": "pnpm --filter paperflow-backend build && pnpm --filter paperflow-frontend build",
-    "test": "pnpm --filter paperflow-frontend test",
+    "test": "pnpm --filter paperflow-backend test && pnpm --filter paperflow-frontend test",
     "start": "node backend/dist/server.js"
   }
 }

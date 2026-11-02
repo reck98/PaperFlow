@@ -52,7 +52,7 @@ export async function generatePdf(request: ExportPdfRequest): Promise<{ buffer: 
 
     // Extract inline base64 images from markdown and write them to disk
     let imgCounter = 0;
-    processedMarkdown = processedMarkdown.replace(/!\[([^\]]*)\]\(data:image\/([a-zA-Z]+);base64,([^)]+)\)/g, (match, alt, ext, b64) => {
+    processedMarkdown = processedMarkdown.replace(/!\[([^\]]*)\]\(data:image\/([a-zA-Z]+);base64,([^)]+)\)/g, (_match, alt, ext, b64) => {
       imgCounter++;
       const imgFileName = `embedded_img_${imgCounter}.${ext || 'png'}`;
       const imgFilePath = path.join(tempDir, imgFileName);
@@ -60,25 +60,52 @@ export async function generatePdf(request: ExportPdfRequest): Promise<{ buffer: 
       return `![${alt}](${imgFileName})`;
     });
 
-    // Safe normalization of unambiguous double-escaped outer delimiters
+    // 2. Protect fenced code blocks (``` and ~~~) and inline code (`) so math regexes never touch code snippets
+    const codeBlocks: { placeholder: string; original: string }[] = [];
+    processedMarkdown = processedMarkdown.replace(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`)/g, (match) => {
+      const placeholder = `PAPERFLOWCODEBLOCK${codeBlocks.length}END`;
+      codeBlocks.push({ placeholder, original: match });
+      return placeholder;
+    });
+
+    // 3. Safe normalization of unambiguous double-escaped outer delimiters outside code blocks
+    // e.g. \\[ ... \\] -> \[ ... \] and \\( ... \\) -> \( ... \)
     processedMarkdown = processedMarkdown.replace(/\\\\\[([\s\S]*?)\\\\\]/g, '\\[$1\\]');
     processedMarkdown = processedMarkdown.replace(/\\\\\(([\s\S]*?)\\\\\)/g, '\\($1\\)');
 
-    // Ensure standalone LaTeX math environments are wrapped in display math delimiters
+    // 4. Protect existing display math blocks ($$...$$ and \[...\]) before wrapping standalone environments
+    const protectedMathBlocks: { placeholder: string; original: string }[] = [];
+    processedMarkdown = processedMarkdown.replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\])/g, (match) => {
+      const placeholder = `PAPERFLOWMATHBLOCK${protectedMathBlocks.length}END`;
+      protectedMathBlocks.push({ placeholder, original: match });
+      return placeholder;
+    });
+
+    // 5. Wrap standalone LaTeX environments (matrix, pmatrix, bmatrix, cases, aligned, align, gather, etc.) in \[ ... \]
     processedMarkdown = processedMarkdown.replace(
-      /(?<!\$)\s*(\\begin\{(?:matrix|pmatrix|bmatrix|vmatrix|aligned|align|gather|cases)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|vmatrix|aligned|align|gather|cases)\})\s*(?!\$)/g,
-      '\n\n$$\n$1\n$$\n\n'
+      /(\\begin\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|aligned|alignedat|gathered|align\*?|gather\*?|cases|dcases|rcases|equation\*?)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|aligned|alignedat|gathered|align\*?|gather\*?|cases|dcases|rcases|equation\*?)\})/g,
+      '\n\n\\[\n$1\n\\]\n\n'
     );
+
+    // 6. Restore protected math blocks
+    for (const b of protectedMathBlocks) {
+      processedMarkdown = processedMarkdown.replace(b.placeholder, () => b.original);
+    }
+
+    // 7. Restore protected code blocks using functional replacement to prevent $ interpretation
+    for (const item of codeBlocks) {
+      processedMarkdown = processedMarkdown.replace(item.placeholder, () => item.original);
+    }
 
     const inputMdPath = path.join(tempDir, 'input.md');
     fs.writeFileSync(inputMdPath, processedMarkdown, 'utf-8');
 
-    // 2. Convert Markdown to Typst body using Pandoc
+    // 8. Convert Markdown to Typst body using Pandoc
     const bodyTypPath = path.join(tempDir, 'body.typ');
     const pandocArgs = [
       'input.md',
       '-f',
-      'markdown+tex_math_dollars+tex_math_double_backslash+raw_tex+pipe_tables+grid_tables+fenced_code_blocks+backtick_code_blocks+auto_identifiers',
+      'markdown+tex_math_dollars+tex_math_single_backslash+tex_math_double_backslash+raw_tex+pipe_tables+grid_tables+fenced_code_blocks+backtick_code_blocks+auto_identifiers',
       '-t',
       'typst',
       '-o',
@@ -91,20 +118,25 @@ export async function generatePdf(request: ExportPdfRequest): Promise<{ buffer: 
         timeout: 15000,
       });
     } catch (err: any) {
-      console.error('Pandoc conversion failed:', err);
-      throw new Error(`Markdown parsing error: ${err.stderr || err.message}`);
+      const sanitizedErr = (err.stderr || err.message || '').replace(new RegExp(tempDir.replace(/\\/g, '\\\\'), 'g'), '[document]');
+      console.error('Pandoc conversion failed:', sanitizedErr);
+      throw new Error(`Markdown parsing error: ${sanitizedErr}`);
+    }
+
+    if (!fs.existsSync(bodyTypPath)) {
+      throw new Error('Markdown parser did not generate intermediate Typst document.');
     }
 
     let bodyTypContent = fs.readFileSync(bodyTypPath, 'utf-8');
 
-    // 3. Wrap with Typst styling template
+    // 9. Wrap with Typst styling template
     const { headerCode } = generateTypstWrapper(metadata, settings);
     const fullTypstSource = `${headerCode}\n\n// --- Document Body ---\n${bodyTypContent}\n`;
 
     const mainTypPath = path.join(tempDir, 'document.typ');
     fs.writeFileSync(mainTypPath, fullTypstSource, 'utf-8');
 
-    // 4. Compile with Typst
+    // 10. Compile with Typst
     const outputPdfPath = path.join(tempDir, 'document.pdf');
     const typstArgs = ['compile', 'document.typ', 'document.pdf'];
 
@@ -114,12 +146,13 @@ export async function generatePdf(request: ExportPdfRequest): Promise<{ buffer: 
         timeout: 20000,
       });
     } catch (err: any) {
-      console.error('Typst compilation failed:', err);
-      throw new Error(`PDF typesetting error: ${err.stderr || err.message}`);
+      const sanitizedErr = (err.stderr || err.message || '').replace(new RegExp(tempDir.replace(/\\/g, '\\\\'), 'g'), '[document]');
+      console.error('Typst compilation failed:', sanitizedErr);
+      throw new Error(`PDF typesetting error: ${sanitizedErr}`);
     }
 
-    if (!fs.existsSync(outputPdfPath)) {
-      throw new Error('PDF output file was not generated.');
+    if (!fs.existsSync(outputPdfPath) || fs.statSync(outputPdfPath).size === 0) {
+      throw new Error('PDF output file was not generated or is empty.');
     }
 
     const pdfBuffer = fs.readFileSync(outputPdfPath);

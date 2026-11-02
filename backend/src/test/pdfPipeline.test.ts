@@ -1,0 +1,246 @@
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { generatePdf, DEFAULT_SETTINGS } from '../converters/pdfService.js';
+import { checkBinaries } from '../utils/paths.js';
+import { DocumentPreset, ExportPdfRequest } from '../types.js';
+
+let totalTests = 0;
+let passedTests = 0;
+let failedTests = 0;
+
+function assert(condition: boolean, message: string) {
+  totalTests++;
+  if (!condition) {
+    failedTests++;
+    console.error(`  FAIL: ${message}`);
+    throw new Error(`Assertion failed: ${message}`);
+  }
+  passedTests++;
+  console.log(`  PASS: ${message}`);
+}
+
+async function runTests() {
+  console.log('\n======================================================');
+  console.log('Paperflow PDF Pipeline & Typesetting Engine Test Suite');
+  console.log('======================================================\n');
+
+  // Test 1: Binary and writer validation
+  console.log('--- Test 1: Startup Binary & Engine Health Check ---');
+  const binaries = checkBinaries();
+  assert(binaries.pandoc, `Pandoc binary detected at ${binaries.pandocPath}`);
+  assert(binaries.pandocSupportsTypst, `Pandoc supports Typst output writer (version: ${binaries.pandocVersion})`);
+  assert(binaries.typst, `Typst CLI binary detected at ${binaries.typstPath} (version: ${binaries.typstVersion})`);
+
+  // Test 2: Complex mathematical equations (Carrier wave, Hadamard, Align, Cases)
+  console.log('\n--- Test 2: Mathematical Equation Typesetting & Delimiters ---');
+  const engineeringMarkdown = `
+# Advanced Digital Communications & Signal Processing
+
+Engineering notes on modulation, transform matrices, and field theory.
+
+## 1. Frequency Shift Keying & Carrier Modulation
+
+The modulated signal waveforms for $M$-ary orthogonal FSK are given by:
+
+\\[
+s_m(t)=\\sqrt{\\frac{2E}{T_s}}\\cos\\left[2\\pi(f_c+m\\Delta f)t\\right], \\quad 0 \\le t \\le T_s, \\quad m = 1, 2, \\dots, M
+\\]
+
+Where the minimum frequency separation for coherent detection is:
+
+\\\\[
+\\Delta f = \\frac{1}{2T_s}
+\\\\]
+
+Inline tests: Energy $E = mc^2$, standard LaTeX inline \\(E = mc^2\\), and double-escaped \\\\(F = ma\\\\).
+
+## 2. Hadamard Transform Matrices
+
+The recursive definition of Sylvester-Hadamard matrices is:
+
+\\[
+H_{n+1}=
+\\begin{bmatrix}
+H_n & H_n \\\\
+H_n & -H_n
+\\end{bmatrix}
+\\]
+
+For $n = 0$, $H_0 = [1]$, which yields:
+
+\\[
+H_1 = \\begin{bmatrix} 1 & 1 \\\\ 1 & -1 \\end{bmatrix}, \\quad
+H_2 = \\begin{bmatrix} 1 & 1 & 1 & 1 \\\\ 1 & -1 & 1 & -1 \\\\ 1 & 1 & -1 & -1 \\\\ 1 & -1 & -1 & 1 \\end{bmatrix}
+\\]
+
+## 3. Multiline Align & Cases Environments
+
+Maxwell's equations in differential form:
+
+\\begin{aligned}
+\\nabla \\cdot \\mathbf{E} &= \\frac{\\rho}{\\varepsilon_0} \\\\
+\\nabla \\cdot \\mathbf{B} &= 0 \\\\
+\\nabla \\times \\mathbf{E} &= -\\frac{\\partial \\mathbf{B}}{\\partial t} \\\\
+\\nabla \\times \\mathbf{B} &= \\mu_0\\mathbf{J} + \\mu_0\\varepsilon_0\\frac{\\partial \\mathbf{E}}{\\partial t}
+\\end{aligned}
+
+Piecewise decision boundary:
+
+\\begin{cases}
+\\hat{m} = 1, & \\text{if } r > \\gamma_{\\text{th}} \\\\
+\\hat{m} = 0, & \\text{otherwise}
+\\end{cases}
+
+Boxed result:
+\\[
+\\boxed{P_e = Q\\left(\\sqrt{\\frac{E_b}{N_0}}\\right)}
+\\]
+`;
+
+  const mathRequest: ExportPdfRequest = {
+    markdown: engineeringMarkdown,
+    metadata: {
+      title: 'Digital Communications Theory',
+      subtitle: 'Orthogonal Signaling and Matrix Encoders',
+      author: 'Dr. Jane Doe',
+      date: '2026',
+      abstract: 'A comprehensive study of M-ary frequency shift keying and recursive Walsh-Hadamard matrix transforms.',
+    },
+    settings: {
+      ...DEFAULT_SETTINGS,
+      preset: 'academic',
+    },
+  };
+
+  const mathResult = await generatePdf(mathRequest);
+  assert(Buffer.isBuffer(mathResult.buffer), 'Returned buffer is a valid Buffer');
+  assert(mathResult.buffer.length > 5000, `Generated PDF buffer is non-empty (${mathResult.buffer.length} bytes)`);
+  assert(mathResult.buffer.slice(0, 5).toString('ascii') === '%PDF-', 'PDF file contains valid %PDF- header magic bytes');
+  assert(mathResult.typstSource.includes('mat('), 'Typst source contains converted Hadamard matrix mat(...)');
+  assert(mathResult.typstSource.includes('sqrt('), 'Typst source contains square root conversion');
+
+  // Test 3: All four document presets (Academic, Technical, Minimal, Research)
+  console.log('\n--- Test 3: Document Presets Validation ---');
+  const presets: DocumentPreset[] = ['academic', 'technical', 'minimal', 'research'];
+
+  for (const preset of presets) {
+    const presetReq: ExportPdfRequest = {
+      markdown: `# ${preset.toUpperCase()} PRESET TEST\n\nTesting layout, typography, and page structure.\n\n\\[ \\int_{-\\infty}^\\infty e^{-x^2} dx = \\sqrt{\\pi} \\]`,
+      metadata: {
+        title: `${preset} Document`,
+        author: 'Paperflow Test Suite',
+      },
+      settings: {
+        ...DEFAULT_SETTINGS,
+        preset,
+        twoColumn: preset === 'research',
+        includeToc: true,
+      },
+    };
+
+    const res = await generatePdf(presetReq);
+    assert(res.buffer.length > 3000, `Preset '${preset}' generates valid PDF (${res.buffer.length} bytes)`);
+    assert(res.buffer.slice(0, 5).toString('ascii') === '%PDF-', `Preset '${preset}' PDF has valid header`);
+  }
+
+  // Test 4: Code block protection (LaTeX math inside code block remains literal)
+  console.log('\n--- Test 4: Code Block Protection ---');
+  const codeBlockMarkdown = `
+# Code Block Test
+
+Here is a Python code snippet with LaTeX-like comments:
+
+\`\`\`python
+# Compute carrier offset: \\[ \\Delta f = \\frac{k}{T_s} \\]
+def compute_carrier(k, Ts):
+    delta_f = k / Ts
+    return delta_f
+\`\`\`
+
+And inline code: \`\\[ x \\]\` or \`$E = mc^2$\`.
+`;
+
+  const codeRes = await generatePdf({
+    markdown: codeBlockMarkdown,
+  });
+  assert(codeRes.buffer.length > 2000, 'Code block document produces valid PDF');
+  // Typst source should contain raw block with code, not equation
+  assert(codeRes.typstSource.includes('compute_carrier'), 'Typst source preserves python code content');
+
+  // Test 5: Comprehensive document features (Tables, Blockquotes, Lists, Multi-page)
+  console.log('\n--- Test 5: Complex Multi-Page Document Features ---');
+  const multiPageMd = `
+# Engineering Specification & Benchmark Analysis
+
+## System Performance Summary
+
+| Architecture | Clock (GHz) | IPC | Power (W) | Efficiency (GFLOPS/W) |
+| :--- | :---: | :---: | :---: | ---: |
+| Alpha Core | 3.2 | 2.1 | 45 | 14.8 |
+| Beta Vector | 2.8 | 3.4 | 65 | 22.1 |
+| Gamma Neural | 1.9 | 5.8 | 35 | 38.4 |
+
+> "Simplicity is prerequisite for reliability." — Edsger W. Dijkstra
+
+### Key Observations
+1. First numbered item with math: $\\alpha = 0.05$.
+2. Second numbered item with vector: $\\mathbf{v} = [x, y, z]^T$.
+   - Nested sub-item A.
+   - Nested sub-item B.
+
+${Array.from({ length: 8 }, (_, i) => `### Section ${i + 3}\n\nParagraph text demonstrating page breaks and continuous document flow across multiple pages in the generated PDF file.\n\n\\[ f_${i}(t) = \\sin(${i + 1}\\omega_0 t) \\]\n`).join('\n')}
+`;
+
+  const multiRes = await generatePdf({
+    markdown: multiPageMd,
+    settings: {
+      ...DEFAULT_SETTINGS,
+      preset: 'technical',
+      numberedHeadings: true,
+      includeToc: true,
+    },
+  });
+  assert(multiRes.buffer.length > 25000, `Multi-page document generates rich PDF (${multiRes.buffer.length} bytes)`);
+
+  // Test 6: Temporary directory cleanup validation
+  console.log('\n--- Test 6: Temporary Directory Cleanup ---');
+  const tmpDirBefore = os.tmpdir();
+  const testReq: ExportPdfRequest = { markdown: '# Temp Cleanup Test\n\nContent' };
+  await generatePdf(testReq);
+  // Verify no lingering paperflow-* directories exist that are older than current run
+  const lingeringDirs = fs.readdirSync(tmpDirBefore).filter((f) => f.startsWith('paperflow-'));
+  assert(lingeringDirs.length === 0, 'Temporary directories are completely removed after PDF generation');
+
+  // Test 7: Error handling without filesystem path leaks
+  console.log('\n--- Test 7: Error Handling & Path Sanitization ---');
+  let caughtError = false;
+  try {
+    // Malformed typst / syntax error trigger
+    await generatePdf({
+      markdown: 'Some markdown',
+      settings: {
+        ...DEFAULT_SETTINGS,
+        fontSize: 'not-a-valid-size' as any,
+      },
+    });
+  } catch (err: any) {
+    caughtError = true;
+    assert(!err.message.includes(os.tmpdir()), 'Error message does not leak internal os.tmpdir() path');
+    assert(err.message.includes('PDF typesetting error'), 'Descriptive error message returned');
+  }
+  assert(caughtError, 'Invalid settings properly caught and rejected');
+
+  console.log('\n======================================================');
+  console.log(`Results: ${passedTests} / ${totalTests} assertions passed (${failedTests} failed)`);
+  console.log('======================================================\n');
+
+  if (failedTests > 0) {
+    process.exit(1);
+  }
+}
+
+runTests().catch((err) => {
+  console.error('Fatal test error:', err);
+  process.exit(1);
+});

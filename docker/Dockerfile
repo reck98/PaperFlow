@@ -34,16 +34,19 @@ ENV DEBIAN_FRONTEND=noninteractive \
     NODE_ENV=production \
     PORT=3000
 
-# 1. Install Node.js 22, Pandoc, Fonts, xz-utils, and curl/ca-certificates
+# 1. Install Node.js 22, Fonts, xz-utils, and curl/ca-certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
     xz-utils \
-    pandoc \
     fonts-dejavu \
     fonts-lmodern \
     fonts-linuxlibertine \
+    fonts-inter \
+    fonts-roboto \
+    fonts-firacode \
+    fonts-noto-core \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
@@ -51,7 +54,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Typst CLI standalone binary (v0.13.0)
+# 2. Install modern Pandoc CLI (v3.6.3) with native Typst writer support
+# (Debian Bookworm's default repository only has Pandoc 2.17 which lacks typst output format)
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://github.com/jgm/pandoc/releases/download/3.6.3/pandoc-3.6.3-1-${ARCH}.deb" -o /tmp/pandoc.deb && \
+    dpkg -i /tmp/pandoc.deb && \
+    rm -f /tmp/pandoc.deb
+
+# 3. Install Typst CLI standalone binary (v0.13.0)
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
       TYPST_URL="https://github.com/typst/typst/releases/download/v0.13.0/typst-x86_64-unknown-linux-musl.tar.xz"; \
@@ -64,20 +74,21 @@ RUN ARCH=$(uname -m) && \
     chmod +x /usr/local/bin/typst && \
     rm -rf /tmp/typst*
 
-# 3. Create unprivileged app user
+# 4. Create unprivileged app user
 RUN useradd -m -s /bin/bash paperflow
 
 WORKDIR /app
 
-# 4. Copy backend production dependencies & built artifacts
+# 5. Copy backend production dependencies & built artifacts
 COPY --chown=paperflow:paperflow backend/package.json ./backend/
 RUN cd backend && npm install --omit=dev
 
 COPY --from=backend-builder --chown=paperflow:paperflow /app/backend/dist ./backend/dist
 COPY --from=frontend-builder --chown=paperflow:paperflow /app/frontend/dist ./frontend/dist
 
-# 5. Verify installed typesetting engines
+# 6. Verify installed typesetting engines during build
 RUN pandoc --version && \
+    pandoc --list-output-formats | grep -w typst && \
     typst --version && \
     node --version
 
