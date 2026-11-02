@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   paperflow:
     build:
@@ -18,7 +16,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    resources:
-      limits:
-        cpus: '2.0'
-        memory: 2048M
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
