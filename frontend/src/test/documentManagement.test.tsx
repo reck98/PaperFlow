@@ -601,4 +601,64 @@ describe('Paperflow Document State & Management Regression Tests', () => {
     expect(screen.getAllByText(/Start writing your document here/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText(/Existing sample content that should NOT be displayed/i)).not.toBeInTheDocument();
   });
+
+  /**
+   * Test 11: "Include Document Title" toggle in Export Modal and Live Preview
+   */
+  it('Test 11: Export modal allows toggling "Include Document Title" and updates export settings and preview', async () => {
+    const doc = createNewDocument(
+      'New Doc',
+      '## Topics Covered Till Now\n\n1. Multidimensional Signalling\n'
+    );
+    await saveDocument(doc);
+    setActiveDocId(doc.id);
+
+    render(
+      <EditorPage
+        isDarkMode={false}
+        onToggleTheme={() => {}}
+        onGoHome={() => {}}
+      />
+    );
+
+    // Wait for document to load
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Export PDF/i })).toBeInTheDocument();
+    });
+
+    // Verify title "New Doc" is visible in LivePreview initially
+    const titleElements = screen.getAllByText('New Doc');
+    expect(titleElements.length).toBeGreaterThanOrEqual(1);
+
+    // Open Export Modal
+    const exportBtn = screen.getByRole('button', { name: /Export PDF/i });
+    fireEvent.click(exportBtn);
+
+    // Verify "Include Document Title" checkbox is present and checked by default
+    const includeTitleCheckbox = await screen.findByRole('checkbox', { name: /Include Document Title/i });
+    expect(includeTitleCheckbox).toBeInTheDocument();
+    expect(includeTitleCheckbox).toBeChecked();
+
+    // Toggle checkbox to false
+    fireEvent.click(includeTitleCheckbox);
+    expect(includeTitleCheckbox).not.toBeChecked();
+
+    // Verify summary shows "(Omitted from PDF)"
+    expect(screen.getByText('(Omitted from PDF)')).toBeInTheDocument();
+
+    // Trigger PDF generation
+    const generateBtn = screen.getByRole('button', { name: /Generate PDF/i });
+    await act(async () => {
+      fireEvent.click(generateBtn);
+    });
+
+    // Verify api was called with includeTitle: false
+    expect(api.exportPdfApi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settings: expect.objectContaining({
+          includeTitle: false,
+        }),
+      })
+    );
+  });
 });

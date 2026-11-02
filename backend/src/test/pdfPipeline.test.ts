@@ -261,6 +261,37 @@ ${Array.from({ length: 8 }, (_, i) => `### Section ${i + 3}\n\nParagraph text de
     assert(res.typstSource.includes('#show box: it => {'), `Preset '${preset}' includes boxed equation numbering fix`);
   }
 
+  // Test 9: Title Block Inclusion Option (includeTitle: true vs false)
+  console.log('\n--- Test 9: Title Block Inclusion Option (includeTitle: true vs false) ---');
+  const docWithTitleMd = '# First Section\n\nSome introductory content.\n';
+  const metaWithTitle = {
+    title: 'New Doc',
+    date: 'November 2026',
+    author: 'Author Name',
+  };
+
+  const pdfWithTitle = await generatePdf({
+    markdown: docWithTitleMd,
+    metadata: metaWithTitle,
+    settings: {
+      ...DEFAULT_SETTINGS,
+      includeTitle: true,
+    },
+  });
+  assert(pdfWithTitle.typstSource.includes('New Doc'), 'Generated Typst includes document title when includeTitle: true');
+  assert(pdfWithTitle.typstSource.includes('November 2026'), 'Generated Typst includes date when includeTitle: true');
+
+  const pdfWithoutTitle = await generatePdf({
+    markdown: docWithTitleMd,
+    metadata: metaWithTitle,
+    settings: {
+      ...DEFAULT_SETTINGS,
+      includeTitle: false,
+    },
+  });
+  assert(!pdfWithoutTitle.typstSource.includes('New Doc'), 'Generated Typst omits document title when includeTitle: false');
+  assert(!pdfWithoutTitle.typstSource.includes('November 2026'), 'Generated Typst omits metadata date when includeTitle: false');
+
   console.log('\n======================================================');
   console.log(`Results: ${passedTests} / ${totalTests} assertions passed (${failedTests} failed)`);
   console.log('======================================================\n');

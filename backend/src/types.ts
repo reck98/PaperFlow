@@ -18,6 +18,7 @@ export interface ExportSettings {
   margins: MarginSize;
   fontSize: '10pt' | '11pt' | '12pt';
   lineSpacing: number;
+  includeTitle?: boolean;
   includeToc: boolean;
   tocDepth: number;
   numberedHeadings: boolean;

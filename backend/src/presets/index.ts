@@ -48,7 +48,7 @@ export function generateTypstWrapper(
       #v(-2pt)
       #line(length: 100%, stroke: 0.4pt + rgb("#e5e7eb"))
     ]`;
-  } else if (settings.preset === 'technical' && metadata.title) {
+  } else if (settings.preset === 'technical' && metadata.title && settings.includeTitle !== false) {
     headerDef = `[
       #grid(
         columns: (1fr, 1fr),
@@ -185,8 +185,8 @@ export function generateTypstWrapper(
 ]
 `;
 
-  // Title block if metadata provided
-  if (metadata.title && metadata.title.trim()) {
+  // Title block if metadata provided and includeTitle is not false
+  if (settings.includeTitle !== false && metadata.title && metadata.title.trim()) {
     headerCode += `
 #v(1em)
 #align(center)[

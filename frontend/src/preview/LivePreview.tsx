@@ -110,7 +110,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
           )}
 
           {/* Document Title Block */}
-          {metadata.title && (
+          {settings.includeTitle !== false && metadata.title && (
             <div className="mb-10 text-center border-b border-gray-100 dark:border-gray-800/80 pb-8">
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-50 mb-3">
                 {metadata.title}

@@ -84,6 +84,7 @@ export const DEFAULT_SETTINGS: ExportSettings = {
   margins: 'normal',
   fontSize: '11pt',
   lineSpacing: 1.4,
+  includeTitle: true,
   includeToc: false,
   tocDepth: 3,
   numberedHeadings: true,
