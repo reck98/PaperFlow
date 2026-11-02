@@ -330,6 +330,17 @@ i\\hbar \\frac{\\partial}{\\partial t} |\\psi(t)\\rangle = \\hat{H} |\\psi(t)\\r
     expect(normalizeMathInner('\\\\|\\mathbf{w}\\\\|_2^2')).toBe('\\|\\mathbf{w}\\|_2^2');
     expect(normalizeMathInner('\\\\alpha + \\\\beta')).toBe('\\alpha + \\beta');
     expect(normalizeMathInner('A^{\\*} = B')).toBe('A^{\\ast} = B');
+    expect(normalizeMathInner('r_j=\\int_0^T r(t)\\phi_j(t)\\\\,dt')).toBe('r_j=\\int_0^T r(t)\\phi_j(t)\\,dt');
+    expect(normalizeMathInner('x\\\\;y\\\\:z\\\\!w')).toBe('x\\;y\\:z\\!w');
+  });
+
+  it('renders integral with double-escaped thin space \\\\, on single line without line break', () => {
+    const md = '$$ r_j=\\int_0^T r(t)\\phi_j(t)\\\\,dt $$';
+    const html = renderMarkdownWithMath(md);
+    expect(html).toContain('class="katex-display"');
+    expect(html).not.toContain('katex-error');
+    // Ensure KaTeX receives \,dt not \\,dt so it doesn't break into two lines
+    expect(html).toContain('r_j=\\int_0^T r(t)\\phi_j(t)\\,dt');
   });
 
   it('renders convolution equations inside LivePreview component without KaTeX parse error', async () => {
@@ -345,6 +356,10 @@ Remember the convolution equation:
 And with markdown escaped asterisk:
 
 \\[ y_j(t)=r(t)\\*h_j(t) \\]
+
+And with correlator integral equation with double-escaped thin space:
+
+$$ r_j=\\int_0^T r(t)\\phi_j(t)\\\\,dt $$
 `;
     const { container } = render(
       <LivePreview
@@ -359,6 +374,6 @@ And with markdown escaped asterisk:
 
     // Ensure display equations are rendered
     const displayElements = container.querySelectorAll('.katex-display');
-    expect(displayElements.length).toBe(2);
+    expect(displayElements.length).toBe(3);
   });
 });

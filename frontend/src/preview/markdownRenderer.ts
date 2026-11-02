@@ -87,18 +87,20 @@ function renderKaTeX(tex: string, displayMode: boolean): string {
 export function normalizeMathInner(inner: string): string {
   return inner
     // 1. Double-escaped braces for sets: \\{ -> \{ and \\} -> \}
-    .replace(/\\\\\{/g, '\\{')
-    .replace(/\\\\\}/g, '\\}')
+    .replace(/\\{2,}\{/g, '\\{')
+    .replace(/\\{2,}\}/g, '\\}')
     // 2. Double-escaped pipe: \\| -> \|
-    .replace(/\\\\\|/g, '\\|')
+    .replace(/\\{2,}\|/g, '\\|')
     // 3. Double-escaped row breaks: \\\\ before newline, space, or end of environment -> \\
     .replace(/\\\\\\\\(?=\s*(?:\r?\n|&|\\end|$))/g, '\\\\')
     // 4. Double-escaped LaTeX commands: \\alpha -> \alpha, \\sum -> \sum, \\vec -> \vec, \\boxed -> \boxed, etc.
-    .replace(/\\\\([a-zA-Z]+)/g, '\\$1')
-    // 5. Escaped asterisks from Markdown (\* or \\*): in LaTeX math, \* is undefined; replace with \ast
+    .replace(/\\{2,}([a-zA-Z]+)/g, '\\$1')
+    // 5. Double-escaped math spacing operators: \\, -> \, and \\: -> \: and \\; -> \; and \\! -> \!
+    .replace(/\\{2,}([,;:!])/g, '\\$1')
+    // 6. Escaped asterisks from Markdown (\* or \\*): in LaTeX math, \* is undefined; replace with \ast
     .replace(/\\+\*(?=[a-zA-Z])/g, '\\ast ')
     .replace(/\\+\*/g, '\\ast')
-    // 6. Collapse internal blank lines which cause Pandoc's TeX math parser to abort
+    // 7. Collapse internal blank lines which cause Pandoc's TeX math parser to abort
     .replace(/\r?\n\s*\r?\n/g, '\n');
 }
 

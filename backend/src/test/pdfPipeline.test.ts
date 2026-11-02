@@ -297,6 +297,8 @@ ${Array.from({ length: 8 }, (_, i) => `### Section ${i + 3}\n\nParagraph text de
   assert(normalizeMathInner('y_j(t)=r(t)\\*h_j(t)') === 'y_j(t)=r(t)\\ast h_j(t)', 'normalizeMathInner converts \\* to \\ast when followed by letter');
   assert(normalizeMathInner('y_j(t)=r(t)*h_j(t)') === 'y_j(t)=r(t)*h_j(t)', 'normalizeMathInner preserves literal *');
   assert(normalizeMathInner('y_j(t)=r(t) \\* h_j(t)') === 'y_j(t)=r(t) \\ast h_j(t)', 'normalizeMathInner converts \\* to \\ast when surrounded by whitespace');
+  assert(normalizeMathInner('r_j=\\int_0^T r(t)\\phi_j(t)\\\\,dt') === 'r_j=\\int_0^T r(t)\\phi_j(t)\\,dt', 'normalizeMathInner converts double-escaped thin space \\\\, to \\,');
+  assert(normalizeMathInner('x\\\\;y\\\\:z\\\\!w') === 'x\\;y\\:z\\!w', 'normalizeMathInner converts double-escaped math spacing operators');
 
   const convolutionEquations = [
     { name: 'Double-backslash with asterisk', md: '\\[ y_j(t)=r(t)*h_j(t) \\]' },
@@ -306,6 +308,7 @@ ${Array.from({ length: 8 }, (_, i) => `### Section ${i + 3}\n\nParagraph text de
     { name: 'Double-dollar with escaped asterisk', md: '$$\ny_j(t)=r(t)\\*h_j(t)\n$$' },
     { name: 'Inline dollar with escaped asterisk', md: 'The convolution is $y_j(t)=r(t)\\*h_j(t)$.' },
     { name: 'Inline parentheses with escaped asterisk', md: 'The convolution is \\(y_j(t)=r(t)\\*h_j(t)\\).' },
+    { name: 'Double-dollar correlator integral with \\\\,dt', md: '$$ r_j=\\int_0^T r(t)\\phi_j(t)\\\\,dt $$' },
   ];
 
   for (const { name, md } of convolutionEquations) {
@@ -324,8 +327,13 @@ ${Array.from({ length: 8 }, (_, i) => `### Section ${i + 3}\n\nParagraph text de
     const convRes = await generatePdf(convReq);
     assert(Buffer.isBuffer(convRes.buffer) && convRes.buffer.length > 5000, `${name}: Valid PDF generated (${convRes.buffer.length} bytes)`);
     assert(convRes.buffer.slice(0, 5).toString('ascii') === '%PDF-', `${name}: PDF contains valid %PDF- magic bytes`);
-    assert(convRes.typstSource.includes('$ y_j (t) = r (t) \\* h_j (t) $') || convRes.typstSource.includes('$y_j (t) = r (t) \\* h_j (t)$'), `${name}: Typst source contains properly converted math equation`);
-    assert(!convRes.typstSource.includes('\\$\\$ y\\_j'), `${name}: TeX math does not fall back to escaped text`);
+    if (name.includes('correlator integral')) {
+      assert(convRes.typstSource.includes('integral_0^T') && convRes.typstSource.includes('phi.alt_j'), `${name}: Typst source contains properly converted integral`);
+      assert(!convRes.typstSource.includes('\\$\\$ r\\_j'), `${name}: TeX math does not fall back to escaped text`);
+    } else {
+      assert(convRes.typstSource.includes('$ y_j (t) = r (t) \\* h_j (t) $') || convRes.typstSource.includes('$y_j (t) = r (t) \\* h_j (t)$'), `${name}: Typst source contains properly converted math equation`);
+      assert(!convRes.typstSource.includes('\\$\\$ y\\_j'), `${name}: TeX math does not fall back to escaped text`);
+    }
   }
 
   console.log('\n======================================================');
