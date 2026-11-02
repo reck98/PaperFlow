@@ -32,6 +32,8 @@ interface EditorPageProps {
   onToggleTheme: () => void;
   onGoHome: () => void;
   initialSampleId?: string | null;
+  openBlankOnLoad?: boolean;
+  onConsumeBlankOnLoad?: () => void;
 }
 
 export const EditorPage: React.FC<EditorPageProps> = ({
@@ -39,6 +41,8 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   onToggleTheme,
   onGoHome,
   initialSampleId,
+  openBlankOnLoad,
+  onConsumeBlankOnLoad,
 }) => {
   // Authoritative Document State: single source of truth
   const [documents, setDocuments] = useState<PaperflowDocument[]>([]);
@@ -159,6 +163,19 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     async function loadData() {
       const allDocs = await getAllDocuments();
 
+      if (openBlankOnLoad) {
+        const blankDoc = createNewDocument();
+        await saveDocument(blankDoc);
+        const updatedDocs = [blankDoc, ...allDocs.filter((d) => d.id !== blankDoc.id)];
+        setDocuments(updatedDocs);
+        setActiveDocumentId(blankDoc.id);
+        setActiveDocId(blankDoc.id);
+        if (onConsumeBlankOnLoad) {
+          onConsumeBlankOnLoad();
+        }
+        return;
+      }
+
       if (initialSampleId) {
         const foundSample = SAMPLE_DOCUMENTS.find((s) => s.id === initialSampleId);
         if (foundSample) {
@@ -199,7 +216,7 @@ export const EditorPage: React.FC<EditorPageProps> = ({
     }
 
     loadData();
-  }, [initialSampleId]);
+  }, [initialSampleId, openBlankOnLoad]);
 
   // Flush saves on page unload
   useEffect(() => {

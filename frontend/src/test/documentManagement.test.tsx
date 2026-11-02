@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { EditorPage } from '../pages/EditorPage';
+import { LandingPage } from '../pages/LandingPage';
+import { App } from '../App';
 import * as api from '../services/api';
 import {
   getAllDocuments,
@@ -541,5 +543,62 @@ describe('Paperflow Document State & Management Regression Tests', () => {
       const ids = new Set(allDocs.map((d) => d.id));
       expect(ids.size).toBe(allDocs.length); // Every single ID is unique
     });
+  });
+
+  /**
+   * Test 9: Footer links and creator attribution
+   */
+  it('Test 9: Footer displays repository link and creator attribution hyperlink', () => {
+    render(
+      <LandingPage
+        onStartWriting={() => {}}
+        onLoadSample={() => {}}
+        isDarkMode={false}
+        onToggleTheme={() => {}}
+      />
+    );
+
+    // Verify GitHub repository link
+    const githubLink = screen.getByRole('link', { name: /^github$/i });
+    expect(githubLink).toHaveAttribute('href', 'https://github.com/reck98/PaperFlow');
+
+    // Verify creator attribution
+    const creatorLink = screen.getByRole('link', { name: /reck98/i });
+    expect(creatorLink).toHaveAttribute('href', 'https://github.com/reck98');
+    expect(screen.getByText(/Made with ❤️ by/i)).toBeInTheDocument();
+  });
+
+  /**
+   * Test 10: "Open Blank Document" creates and opens a fresh blank document
+   */
+  it('Test 10: Clicking Open Blank Document opens a fresh blank document instead of existing loaded documents', async () => {
+    // Pre-populate IndexedDB with an existing document
+    const existingDoc = createNewDocument(
+      'Quantum Mechanics Existing Doc',
+      '# Quantum Mechanics\n\nExisting sample content that should NOT be displayed when opening a blank doc.'
+    );
+    await saveDocument(existingDoc);
+    setActiveDocId(existingDoc.id);
+
+    render(<App />);
+
+    // Initially on landing page
+    const openBlankBtn = screen.getByRole('button', { name: /Open Blank Document/i });
+    expect(openBlankBtn).toBeInTheDocument();
+
+    // Click "Open Blank Document"
+    await act(async () => {
+      fireEvent.click(openBlankBtn);
+    });
+
+    // Should navigate to Editor and display a brand new Untitled Document
+    await waitFor(() => {
+      const renameBtn = screen.getByTitle('Click to rename document');
+      expect(renameBtn).toHaveTextContent('Untitled Document');
+    });
+
+    // Editor and preview should show fresh blank template, not the existing doc content
+    expect(screen.getAllByText(/Start writing your document here/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText(/Existing sample content that should NOT be displayed/i)).not.toBeInTheDocument();
   });
 });

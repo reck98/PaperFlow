@@ -9,6 +9,7 @@ import { SAMPLE_DOCUMENTS } from '../samples';
 
 interface LandingPageProps {
   onStartWriting: () => void;
+  onOpenBlankDocument?: () => void;
   onLoadSample: (sampleId: string) => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
@@ -16,6 +17,7 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onStartWriting,
+  onOpenBlankDocument = onStartWriting,
   onLoadSample,
   isDarkMode,
   onToggleTheme,
@@ -319,8 +321,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <button
-            onClick={onStartWriting}
-            className="mt-4 sm:mt-0 flex items-center space-x-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
+            onClick={onOpenBlankDocument}
+            className="mt-4 sm:mt-0 flex items-center space-x-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
           >
             <span>Open Blank Document</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -354,20 +356,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* Footer */}
       <footer className="mt-auto py-12 px-6 sm:px-12 text-xs text-gray-500 dark:text-gray-400 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-6 h-6 rounded bg-amber-700 dark:bg-amber-600 flex items-center justify-center text-white font-serif font-bold text-xs">
-            P
+        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
+          <div className="flex items-center space-x-3">
+            <div className="w-6 h-6 rounded bg-amber-700 dark:bg-amber-600 flex items-center justify-center text-white font-serif font-bold text-xs">
+              P
+            </div>
+            <span className="font-semibold text-gray-900 dark:text-gray-100">Paperflow</span>
+            <span className="text-gray-300 dark:text-gray-700">•</span>
+            <span>From Markdown to beautifully typeset documents.</span>
           </div>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">Paperflow</span>
-          <span className="text-gray-300 dark:text-gray-700">•</span>
-          <span>From Markdown to beautifully typeset documents.</span>
+          <span className="hidden sm:inline text-gray-300 dark:text-gray-700">•</span>
+          <span>
+            Made with ❤️ by{' '}
+            <a
+              href="https://github.com/reck98"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-gray-700 dark:text-gray-300 hover:text-amber-700 dark:hover:text-amber-400 underline underline-offset-2 transition-colors"
+            >
+              reck98
+            </a>
+          </span>
         </div>
 
         <div className="flex items-center space-x-6 text-[11px]">
           <span>Privacy Focused (Local Browser Storage)</span>
           <span>Pandoc & Typst Engine</span>
           <a
-            href="https://github.com"
+            href="https://github.com/reck98/PaperFlow"
             target="_blank"
             rel="noreferrer"
             className="hover:text-gray-900 dark:hover:text-white transition-colors"

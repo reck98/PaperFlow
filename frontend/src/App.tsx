@@ -10,6 +10,7 @@ export function App() {
     return 'landing';
   });
   const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
+  const [openBlankOnLoad, setOpenBlankOnLoad] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('paperflow_theme');
     if (saved) return saved === 'dark';
@@ -31,11 +32,19 @@ export function App() {
 
   const handleStartWriting = () => {
     setSelectedSampleId(null);
+    setOpenBlankOnLoad(false);
+    setCurrentPage('editor');
+  };
+
+  const handleOpenBlankDocument = () => {
+    setSelectedSampleId(null);
+    setOpenBlankOnLoad(true);
     setCurrentPage('editor');
   };
 
   const handleLoadSampleFromLanding = (sampleId: string) => {
     setSelectedSampleId(sampleId);
+    setOpenBlankOnLoad(false);
     setCurrentPage('editor');
   };
 
@@ -48,6 +57,7 @@ export function App() {
       {currentPage === 'landing' ? (
         <LandingPage
           onStartWriting={handleStartWriting}
+          onOpenBlankDocument={handleOpenBlankDocument}
           onLoadSample={handleLoadSampleFromLanding}
           isDarkMode={isDarkMode}
           onToggleTheme={toggleTheme}
@@ -58,6 +68,8 @@ export function App() {
           onToggleTheme={toggleTheme}
           onGoHome={handleGoHome}
           initialSampleId={selectedSampleId}
+          openBlankOnLoad={openBlankOnLoad}
+          onConsumeBlankOnLoad={() => setOpenBlankOnLoad(false)}
         />
       )}
     </div>
