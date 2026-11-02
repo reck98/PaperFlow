@@ -38,6 +38,9 @@ importers:
       marked:
         specifier: ^15.0.7
         version: 15.0.12
+      marked-katex-extension:
+        specifier: ^5.1.13
+        version: 5.1.13(katex@0.16.47)(marked@15.0.12)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -1022,6 +1025,12 @@ packages:
 
   magic-string@1.4.5:
     resolution: {integrity: sha512-oLLC2+YvQUfAa+vxoufE/yc1icb87M9iXIRqAoR/2EhE/8cb3SF/+Gi0c2By1B+5Vz2e2vQtUvHiu1+63Znh+w==}
+
+  marked-katex-extension@5.1.13:
+    resolution: {integrity: sha512-+6gVygGg5at9g+YsuIQZk7XcAc6Pg1P0grEJKEWvF7DAwceZ7ZIvU0fhQe6auUqSbnPmSjJxZuICdSCdbGaFRw==}
+    peerDependencies:
+      katex: '>=0.16 <0.19'
+      marked: '>=4 <19'
 
   marked@15.0.12:
     resolution: {integrity: sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==}
@@ -2286,6 +2295,11 @@ snapshots:
   magic-string@1.4.5:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  marked-katex-extension@5.1.13(katex@0.16.47)(marked@15.0.12):
+    dependencies:
+      katex: 0.16.47
+      marked: 15.0.12
 
   marked@15.0.12: {}
 

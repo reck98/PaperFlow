@@ -60,6 +60,10 @@ export async function generatePdf(request: ExportPdfRequest): Promise<{ buffer: 
       return `![${alt}](${imgFileName})`;
     });
 
+    // Safe normalization of unambiguous double-escaped outer delimiters
+    processedMarkdown = processedMarkdown.replace(/\\\\\[([\s\S]*?)\\\\\]/g, '\\[$1\\]');
+    processedMarkdown = processedMarkdown.replace(/\\\\\(([\s\S]*?)\\\\\)/g, '\\($1\\)');
+
     // Ensure standalone LaTeX math environments are wrapped in display math delimiters
     processedMarkdown = processedMarkdown.replace(
       /(?<!\$)\s*(\\begin\{(?:matrix|pmatrix|bmatrix|vmatrix|aligned|align|gather|cases)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|vmatrix|aligned|align|gather|cases)\})\s*(?!\$)/g,

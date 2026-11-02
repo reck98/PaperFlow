@@ -98,6 +98,23 @@
   font-size: 1.05em;
 }
 
+.katex-display-wrapper {
+  margin: 1.25rem 0;
+  text-align: center;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.katex-inline-wrapper {
+  display: inline;
+}
+
+.katex-error {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 /* CodeMirror customizations */
 .cm-editor {
   height: 100%;
