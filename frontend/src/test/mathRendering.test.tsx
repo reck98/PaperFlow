@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { describe, it, expect, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { renderMarkdownWithMath } from '../preview/markdownRenderer';
+import { renderMarkdownWithMath, normalizeMathInner } from '../preview/markdownRenderer';
 import { LivePreview } from '../preview/LivePreview';
 import { EditorPage } from '../pages/EditorPage';
 import { DEFAULT_DOCUMENT_SETTINGS, createNewDocument, saveDocument, setActiveDocId } from '../services/db';
@@ -277,5 +277,88 @@ i\\hbar \\frac{\\partial}{\\partial t} |\\psi(t)\\rangle = \\hat{H} |\\psi(t)\\r
       expect(screen.getByTitle('Click to rename document')).toHaveTextContent('Doc Math 1');
       expect(container.querySelector('.katex')).toBeInTheDocument();
     });
+  });
+
+  /**
+   * 13. Regression: Convolution and multiplication equations (exact equation from bug report)
+   * Ensures:
+   * - Display math delimiters \[...\] and double-escaped \\[...\\] are parsed correctly
+   * - Escaped asterisk \* is normalized to \ast so KaTeX does not report "Undefined control sequence: \*"
+   * - Multiplication with regular * and \ast and \cdot renders properly
+   * - Backslashes are not incorrectly escaped or stripped
+   * - LivePreview renders without any .katex-error
+   */
+  it('renders convolution equation with exact markdown \\[ y_j(t)=r(t)*h_j(t) \\] and \\[ y_j(t)=r(t)\\*h_j(t) \\]', () => {
+    // Exact equation from user report with unescaped asterisk
+    const md1 = '\\[ y_j(t)=r(t)*h_j(t) \\]';
+    const html1 = renderMarkdownWithMath(md1);
+    expect(html1).toContain('class="katex-display"');
+    expect(html1).not.toContain('katex-error');
+    expect(html1).not.toContain('\\[ y_j');
+
+    // Exact equation from screenshot with escaped asterisk
+    const md2 = '\\[ y_j(t)=r(t)\\*h_j(t) \\]';
+    const html2 = renderMarkdownWithMath(md2);
+    expect(html2).toContain('class="katex-display"');
+    expect(html2).not.toContain('katex-error');
+    expect(html2).not.toContain('Undefined control sequence');
+    expect(html2).not.toContain('\\[ y_j');
+
+    // Single-backslash display delimiters
+    const md3 = '\\[ y_j(t)=r(t)*h_j(t) \\]';
+    const html3 = renderMarkdownWithMath(md3);
+    expect(html3).toContain('class="katex-display"');
+    expect(html3).not.toContain('katex-error');
+
+    const md4 = '\\[ y_j(t)=r(t)\\*h_j(t) \\]';
+    const html4 = renderMarkdownWithMath(md4);
+    expect(html4).toContain('class="katex-display"');
+    expect(html4).not.toContain('katex-error');
+
+    // Inline math with escaped asterisk
+    const md5 = 'The convolution is $y_j(t)=r(t)\\*h_j(t)$ and \\(y_j(t)=r(t)\\*h_j(t)\\).';
+    const html5 = renderMarkdownWithMath(md5);
+    expect(html5).toContain('class="katex"');
+    expect(html5).not.toContain('katex-error');
+  });
+
+  it('normalizes math inner characters correctly (braces, pipes, asterisks, double commands)', () => {
+    expect(normalizeMathInner('y_j(t)=r(t)\\*h_j(t)')).toBe('y_j(t)=r(t)\\ast h_j(t)');
+    expect(normalizeMathInner('y_j(t)=r(t)*h_j(t)')).toBe('y_j(t)=r(t)*h_j(t)');
+    expect(normalizeMathInner('y_j(t)=r(t) \\* h_j(t)')).toBe('y_j(t)=r(t) \\ast h_j(t)');
+    expect(normalizeMathInner('\\\\{s_1, -s_1\\\\}')).toBe('\\{s_1, -s_1\\}');
+    expect(normalizeMathInner('\\\\|\\mathbf{w}\\\\|_2^2')).toBe('\\|\\mathbf{w}\\|_2^2');
+    expect(normalizeMathInner('\\\\alpha + \\\\beta')).toBe('\\alpha + \\beta');
+    expect(normalizeMathInner('A^{\\*} = B')).toBe('A^{\\ast} = B');
+  });
+
+  it('renders convolution equations inside LivePreview component without KaTeX parse error', async () => {
+    const markdown = `
+## 4. How does the matched filter produce the correlator output?
+
+This is the most important mathematical part of this section.
+
+Remember the convolution equation:
+
+\\[ y_j(t)=r(t)*h_j(t) \\]
+
+And with markdown escaped asterisk:
+
+\\[ y_j(t)=r(t)\\*h_j(t) \\]
+`;
+    const { container } = render(
+      <LivePreview
+        markdown={markdown}
+        metadata={defaultMeta}
+        settings={DEFAULT_DOCUMENT_SETTINGS}
+      />
+    );
+
+    // Ensure no KaTeX parse error banner is rendered
+    expect(container.querySelector('.katex-error')).toBeNull();
+
+    // Ensure display equations are rendered
+    const displayElements = container.querySelectorAll('.katex-display');
+    expect(displayElements.length).toBe(2);
   });
 });

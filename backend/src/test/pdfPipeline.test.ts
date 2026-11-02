@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { generatePdf, DEFAULT_SETTINGS } from '../converters/pdfService.js';
+import { generatePdf, DEFAULT_SETTINGS, normalizeMathInner } from '../converters/pdfService.js';
 import { checkBinaries } from '../utils/paths.js';
 import { DocumentPreset, ExportPdfRequest } from '../types.js';
 
@@ -291,6 +291,42 @@ ${Array.from({ length: 8 }, (_, i) => `### Section ${i + 3}\n\nParagraph text de
   });
   assert(!pdfWithoutTitle.typstSource.includes('New Doc'), 'Generated Typst omits document title when includeTitle: false');
   assert(!pdfWithoutTitle.typstSource.includes('November 2026'), 'Generated Typst omits metadata date when includeTitle: false');
+
+  // Test 10: Convolution Equation and Asterisk Multiplication LaTeX Normalization
+  console.log('\n--- Test 10: Convolution Equation & Asterisk Multiplication Typesetting ---');
+  assert(normalizeMathInner('y_j(t)=r(t)\\*h_j(t)') === 'y_j(t)=r(t)\\ast h_j(t)', 'normalizeMathInner converts \\* to \\ast when followed by letter');
+  assert(normalizeMathInner('y_j(t)=r(t)*h_j(t)') === 'y_j(t)=r(t)*h_j(t)', 'normalizeMathInner preserves literal *');
+  assert(normalizeMathInner('y_j(t)=r(t) \\* h_j(t)') === 'y_j(t)=r(t) \\ast h_j(t)', 'normalizeMathInner converts \\* to \\ast when surrounded by whitespace');
+
+  const convolutionEquations = [
+    { name: 'Double-backslash with asterisk', md: '\\[ y_j(t)=r(t)*h_j(t) \\]' },
+    { name: 'Double-backslash with escaped asterisk', md: '\\[ y_j(t)=r(t)\\*h_j(t) \\]' },
+    { name: 'Single-backslash with asterisk', md: '\\[ y_j(t)=r(t)*h_j(t) \\]' },
+    { name: 'Single-backslash with escaped asterisk', md: '\\[ y_j(t)=r(t)\\*h_j(t) \\]' },
+    { name: 'Double-dollar with escaped asterisk', md: '$$\ny_j(t)=r(t)\\*h_j(t)\n$$' },
+    { name: 'Inline dollar with escaped asterisk', md: 'The convolution is $y_j(t)=r(t)\\*h_j(t)$.' },
+    { name: 'Inline parentheses with escaped asterisk', md: 'The convolution is \\(y_j(t)=r(t)\\*h_j(t)\\).' },
+  ];
+
+  for (const { name, md } of convolutionEquations) {
+    const convReq: ExportPdfRequest = {
+      markdown: `# Signal Processing\n\nRemember the convolution equation:\n\n${md}\n`,
+      metadata: {
+        title: 'Matched Filter & Correlator Theory',
+        author: 'Paperflow Test Suite',
+      },
+      settings: {
+        ...DEFAULT_SETTINGS,
+        preset: 'academic',
+      },
+    };
+
+    const convRes = await generatePdf(convReq);
+    assert(Buffer.isBuffer(convRes.buffer) && convRes.buffer.length > 5000, `${name}: Valid PDF generated (${convRes.buffer.length} bytes)`);
+    assert(convRes.buffer.slice(0, 5).toString('ascii') === '%PDF-', `${name}: PDF contains valid %PDF- magic bytes`);
+    assert(convRes.typstSource.includes('$ y_j (t) = r (t) \\* h_j (t) $') || convRes.typstSource.includes('$y_j (t) = r (t) \\* h_j (t)$'), `${name}: Typst source contains properly converted math equation`);
+    assert(!convRes.typstSource.includes('\\$\\$ y\\_j'), `${name}: TeX math does not fall back to escaped text`);
+  }
 
   console.log('\n======================================================');
   console.log(`Results: ${passedTests} / ${totalTests} assertions passed (${failedTests} failed)`);

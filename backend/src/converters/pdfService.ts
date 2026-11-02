@@ -21,7 +21,10 @@ export function normalizeMathInner(inner: string): string {
     .replace(/\\\\\\\\(?=\s*(?:\r?\n|&|\\end|$))/g, '\\\\')
     // 4. Double-escaped LaTeX commands: \\alpha -> \alpha, \\sum -> \sum, \\vec -> \vec, \\boxed -> \boxed, etc.
     .replace(/\\\\([a-zA-Z]+)/g, '\\$1')
-    // 5. Collapse internal blank lines which cause Pandoc's TeX math parser to abort
+    // 5. Escaped asterisks from Markdown (\* or \\*): in LaTeX math, \* is undefined; replace with \ast
+    .replace(/\\+\*(?=[a-zA-Z])/g, '\\ast ')
+    .replace(/\\+\*/g, '\\ast')
+    // 6. Collapse internal blank lines which cause Pandoc's TeX math parser to abort
     .replace(/\r?\n\s*\r?\n/g, '\n');
 }
 

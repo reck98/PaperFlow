@@ -27,7 +27,7 @@ export function extractOutline(markdown: string): OutlineItem[] {
       // Strip markdown formatting symbols but preserve readable text
       const plainText = rawText
         .replace(/[*_`]/g, '')
-        .replace(/\\\[|\\\]|\\\(|\\\)/g, '')
+        .replace(/\\+\[|\\+\]|\\+\(|\\+\)/g, '')
         .trim();
       const id = plainText
         .toLowerCase()
@@ -84,6 +84,24 @@ function renderKaTeX(tex: string, displayMode: boolean): string {
   }
 }
 
+export function normalizeMathInner(inner: string): string {
+  return inner
+    // 1. Double-escaped braces for sets: \\{ -> \{ and \\} -> \}
+    .replace(/\\\\\{/g, '\\{')
+    .replace(/\\\\\}/g, '\\}')
+    // 2. Double-escaped pipe: \\| -> \|
+    .replace(/\\\\\|/g, '\\|')
+    // 3. Double-escaped row breaks: \\\\ before newline, space, or end of environment -> \\
+    .replace(/\\\\\\\\(?=\s*(?:\r?\n|&|\\end|$))/g, '\\\\')
+    // 4. Double-escaped LaTeX commands: \\alpha -> \alpha, \\sum -> \sum, \\vec -> \vec, \\boxed -> \boxed, etc.
+    .replace(/\\\\([a-zA-Z]+)/g, '\\$1')
+    // 5. Escaped asterisks from Markdown (\* or \\*): in LaTeX math, \* is undefined; replace with \ast
+    .replace(/\\+\*(?=[a-zA-Z])/g, '\\ast ')
+    .replace(/\\+\*/g, '\\ast')
+    // 6. Collapse internal blank lines which cause Pandoc's TeX math parser to abort
+    .replace(/\r?\n\s*\r?\n/g, '\n');
+}
+
 export function renderMarkdownWithMath(markdown: string): string {
   if (!markdown) return '';
 
@@ -101,14 +119,14 @@ export function renderMarkdownWithMath(markdown: string): string {
   // 2. Safe normalization of unambiguous double-escaped outer delimiters outside code blocks
   // e.g., \\[ ... \\] -> \[ ... \] and \\( ... \\) -> \( ... \)
   // Does NOT replace internal double-backslashes (like LaTeX row breaks \\)
-  text = text.replace(/\\\\\[([\s\S]*?)\\\\\]/g, '\\[$1\\]');
-  text = text.replace(/\\\\\(([\s\S]*?)\\\\\)/g, '\\($1\\)');
+  text = text.replace(/\\\\\[([\s\S]*?)\\\\\]/g, (_m, inner) => `\\[${inner}\\]`);
+  text = text.replace(/\\\\\(([\s\S]*?)\\\\\)/g, (_m, inner) => `\\(${inner}\\)`);
 
   // 3. Extract display mathematics:
   // a) $$ ... $$
   text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_match, math) => {
     const placeholder = `PAPERFLOWMATHBLOCK${placeholderCounter++}END`;
-    const rendered = `<div class="katex-display-wrapper my-4 overflow-x-auto text-center">${renderKaTeX(math, true)}</div>`;
+    const rendered = `<div class="katex-display-wrapper my-4 overflow-x-auto text-center">${renderKaTeX(normalizeMathInner(math), true)}</div>`;
     mathPlaceholders.push({ placeholder, rendered });
     return `\n\n${placeholder}\n\n`;
   });
@@ -116,7 +134,7 @@ export function renderMarkdownWithMath(markdown: string): string {
   // b) Standard LaTeX display delimiters: \[ ... \]
   text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_match, math) => {
     const placeholder = `PAPERFLOWMATHBLOCK${placeholderCounter++}END`;
-    const rendered = `<div class="katex-display-wrapper my-4 overflow-x-auto text-center">${renderKaTeX(math, true)}</div>`;
+    const rendered = `<div class="katex-display-wrapper my-4 overflow-x-auto text-center">${renderKaTeX(normalizeMathInner(math), true)}</div>`;
     mathPlaceholders.push({ placeholder, rendered });
     return `\n\n${placeholder}\n\n`;
   });
@@ -126,7 +144,7 @@ export function renderMarkdownWithMath(markdown: string): string {
     /(?:^|[^\$\\])(\\begin\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|aligned|alignedat|gathered|align\*?|gather\*?|cases|dcases|rcases|equation\*?)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|aligned|alignedat|gathered|align\*?|gather\*?|cases|dcases|rcases|equation\*?)\})/g,
     (match, math) => {
       const placeholder = `PAPERFLOWMATHBLOCK${placeholderCounter++}END`;
-      const rendered = `<div class="katex-display-wrapper my-4 overflow-x-auto text-center">${renderKaTeX(math, true)}</div>`;
+      const rendered = `<div class="katex-display-wrapper my-4 overflow-x-auto text-center">${renderKaTeX(normalizeMathInner(math), true)}</div>`;
       mathPlaceholders.push({ placeholder, rendered });
       const prefix = match.startsWith(math) ? '' : match.substring(0, match.length - math.length);
       return `${prefix}\n\n${placeholder}\n\n`;
@@ -137,7 +155,7 @@ export function renderMarkdownWithMath(markdown: string): string {
   // a) Standard LaTeX inline delimiters: \( ... \)
   text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_match, math) => {
     const placeholder = `PAPERFLOWMATHINLINE${placeholderCounter++}END`;
-    const rendered = `<span class="katex-inline-wrapper">${renderKaTeX(math, false)}</span>`;
+    const rendered = `<span class="katex-inline-wrapper">${renderKaTeX(normalizeMathInner(math), false)}</span>`;
     mathPlaceholders.push({ placeholder, rendered });
     return placeholder;
   });
@@ -146,7 +164,7 @@ export function renderMarkdownWithMath(markdown: string): string {
   // Negative lookbehind/lookahead ensures escaped \$ is ignored and opening/closing spacing rules are respected
   text = text.replace(/(?<!\\)\$(?!\s)([^\$\n]+?)(?<!\s)(?<!\\)\$/g, (_match, math) => {
     const placeholder = `PAPERFLOWMATHINLINE${placeholderCounter++}END`;
-    const rendered = `<span class="katex-inline-wrapper">${renderKaTeX(math, false)}</span>`;
+    const rendered = `<span class="katex-inline-wrapper">${renderKaTeX(normalizeMathInner(math), false)}</span>`;
     mathPlaceholders.push({ placeholder, rendered });
     return placeholder;
   });
