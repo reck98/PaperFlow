@@ -3,7 +3,12 @@ import { LandingPage } from './pages/LandingPage';
 import { EditorPage } from './pages/EditorPage';
 
 export function App() {
-  const [currentPage, setCurrentPage] = useState<'landing' | 'editor'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'editor'>(() => {
+    if (typeof window !== 'undefined' && (window.location.hash === '#editor' || window.location.search.includes('view=editor'))) {
+      return 'editor';
+    }
+    return 'landing';
+  });
   const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('paperflow_theme');
