@@ -242,13 +242,30 @@ export function renderMarkdownWithMath(markdown: string): string {
   renderer.code = ({ text: code, lang }) => {
     const language = lang || 'text';
     return `
-      <div class="my-5 rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-900 text-gray-100 font-mono text-xs">
+      <div class="my-5 rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-900 text-gray-100 font-mono text-xs max-w-full">
         <div class="flex items-center justify-between px-3.5 py-1.5 bg-gray-800/90 border-b border-gray-700/60 text-gray-400 select-none">
           <span class="text-[11px] font-medium tracking-wide lowercase">${escapeHtml(language)}</span>
         </div>
-        <pre class="p-4 overflow-x-auto leading-relaxed"><code>${escapeHtml(code)}</code></pre>
+        <pre class="p-4 overflow-x-auto leading-relaxed max-w-full"><code>${escapeHtml(code)}</code></pre>
       </div>
     `;
+  };
+
+  renderer.image = ({ href, title, text }) => {
+    const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+    const altAttr = text ? ` alt="${escapeHtml(text)}"` : ' alt="Document Image"';
+    return `
+      <figure class="my-6 max-w-full text-center">
+        <img src="${escapeHtml(href)}" class="max-w-full h-auto rounded shadow-sm mx-auto"${altAttr}${titleAttr} loading="lazy" />
+        ${text ? `<figcaption class="mt-2 text-center text-xs text-gray-500 dark:text-gray-400 font-sans italic">${escapeHtml(text)}</figcaption>` : ''}
+      </figure>
+    `;
+  };
+
+  renderer.link = ({ href, title, tokens }) => {
+    const linkText = marked.parseInline(tokens.map((t) => t.raw).join('')) as string;
+    const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+    return `<a href="${escapeHtml(href)}" class="text-amber-700 dark:text-amber-400 underline underline-offset-2 break-words hover:text-amber-800 dark:hover:text-amber-300 transition-colors"${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`;
   };
 
   marked.setOptions({

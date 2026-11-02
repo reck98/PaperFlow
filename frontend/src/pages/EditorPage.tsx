@@ -8,6 +8,11 @@ import { UploadModal } from '../components/UploadModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { ShortcutsModal } from '../components/ShortcutsModal';
 import { extractOutline } from '../preview/markdownRenderer';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import {
+  Code2,
+  BookOpen,
+} from 'lucide-react';
 import {
   PaperflowDocument,
   ExportSettings,
@@ -44,6 +49,8 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   openBlankOnLoad,
   onConsumeBlankOnLoad,
 }) => {
+  const isMobile = useIsMobile();
+
   // Authoritative Document State: single source of truth
   const [documents, setDocuments] = useState<PaperflowDocument[]>([]);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
@@ -64,10 +71,18 @@ export const EditorPage: React.FC<EditorPageProps> = ({
   const pendingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // UI state
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [viewMode, setViewMode] = useState<'split' | 'editor' | 'preview'>('split');
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
   const [splitRatio, setSplitRatio] = useState<number>(50); // percentage for left panel
   const isDraggingSplitterRef = useRef(false);
+
+  // Automatically close sidebar if entering mobile viewport
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [isMobile]);
 
   // Modals state
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -424,18 +439,54 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         isDarkMode={isDarkMode}
         onToggleTheme={onToggleTheme}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={(mode) => {
+          setViewMode(mode);
+          if (mode === 'preview') setMobileTab('preview');
+          if (mode === 'editor') setMobileTab('editor');
+        }}
         isSaving={isSaving}
         hasUnsavedChanges={hasUnsavedChanges}
         onExportClick={() => setIsExportOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         onGoHome={onGoHome}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        isSidebarOpen={sidebarOpen}
       />
 
+      {/* Mobile Tab Switcher Bar: Clean, Accessible Editor | Preview */}
+      {isMobile && (
+        <div className="flex-none px-3 py-1.5 bg-[#f4f2ec] dark:bg-[#15181a] border-b border-[#e5e3dd] dark:border-[#24292e] flex items-center justify-center select-none z-10">
+          <div className="grid grid-cols-2 w-full max-w-sm bg-gray-200/80 dark:bg-gray-800/80 p-0.5 rounded-md text-xs">
+            <button
+              onClick={() => setMobileTab('editor')}
+              className={`flex items-center justify-center space-x-1.5 py-2 px-3 rounded transition-all font-medium min-h-[38px] ${
+                mobileTab === 'editor'
+                  ? 'bg-white dark:bg-gray-900 text-gray-950 dark:text-gray-50 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Code2 className="w-4 h-4 text-amber-700 dark:text-amber-500" />
+              <span>Editor</span>
+            </button>
+            <button
+              onClick={() => setMobileTab('preview')}
+              className={`flex items-center justify-center space-x-1.5 py-2 px-3 rounded transition-all font-medium min-h-[38px] ${
+                mobileTab === 'preview'
+                  ? 'bg-white dark:bg-gray-900 text-gray-950 dark:text-gray-50 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <BookOpen className="w-4 h-4 text-amber-700 dark:text-amber-500" />
+              <span>Preview</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Workspace (Sidebar + Resizable Editor & Preview) */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Collapsible Left Sidebar */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Sidebar (Desktop panel or Mobile Drawer) */}
         <Sidebar
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(!sidebarOpen)}
@@ -449,38 +500,46 @@ export const EditorPage: React.FC<EditorPageProps> = ({
           outline={outline}
           wordCount={wordCount}
           charCount={charCount}
+          isMobile={isMobile}
+          onCloseMobile={() => setSidebarOpen(false)}
         />
 
         {/* Resizable Editor & Preview Container */}
         <div id="workspace-container" className="flex-1 flex overflow-hidden relative">
           {/* Left Panel: Markdown Editor */}
-          {(viewMode === 'split' || viewMode === 'editor') && (
-            <div
-              style={{
-                width: viewMode === 'split' ? `${splitRatio}%` : '100%',
+          <div
+            style={{
+              width: !isMobile && viewMode === 'split' ? `${splitRatio}%` : '100%',
+            }}
+            className={`h-full flex-col bg-[#faf9f6] dark:bg-[#0e1012] overflow-hidden ${
+              isMobile
+                ? mobileTab === 'editor'
+                  ? 'flex w-full'
+                  : 'hidden'
+                : viewMode === 'preview'
+                ? 'hidden'
+                : 'flex'
+            }`}
+          >
+            <CodeEditor
+              key={activeDocument.id}
+              documentId={activeDocument.id}
+              value={activeDocument.markdown}
+              onChange={(markdown) => updateDocument(activeDocument.id, { markdown })}
+              isDarkMode={isDarkMode}
+              onDropFile={(file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  handleUploadSuccess(file.name, e.target?.result as string);
+                };
+                reader.readAsText(file);
               }}
-              className="h-full flex flex-col bg-[#faf9f6] dark:bg-[#0e1012] overflow-hidden"
-            >
-              <CodeEditor
-                key={activeDocument.id}
-                documentId={activeDocument.id}
-                value={activeDocument.markdown}
-                onChange={(markdown) => updateDocument(activeDocument.id, { markdown })}
-                isDarkMode={isDarkMode}
-                onDropFile={(file) => {
-                  const reader = new FileReader();
-                  reader.onload = (e) => {
-                    handleUploadSuccess(file.name, e.target?.result as string);
-                  };
-                  reader.readAsText(file);
-                }}
-                onExportPdf={() => setIsExportOpen(true)}
-              />
-            </div>
-          )}
+              onExportPdf={() => setIsExportOpen(true)}
+            />
+          </div>
 
-          {/* Splitter Handle */}
-          {viewMode === 'split' && (
+          {/* Splitter Handle (Desktop Split View Only) */}
+          {!isMobile && viewMode === 'split' && (
             <div
               onMouseDown={handleSplitterMouseDown}
               className="w-1.5 hover:w-2 bg-[#e5e3dd] dark:bg-[#22262b] hover:bg-amber-600 dark:hover:bg-amber-500 cursor-col-resize transition-colors z-10 flex items-center justify-center select-none"
@@ -490,20 +549,26 @@ export const EditorPage: React.FC<EditorPageProps> = ({
           )}
 
           {/* Right Panel: Live Document Preview */}
-          {(viewMode === 'split' || viewMode === 'preview') && (
-            <div
-              style={{
-                width: viewMode === 'split' ? `${100 - splitRatio}%` : '100%',
-              }}
-              className="h-full flex flex-col overflow-hidden"
-            >
-              <LivePreview
-                markdown={activeDocument.markdown}
-                metadata={activeDocument.metadata}
-                settings={activeDocument.settings}
-              />
-            </div>
-          )}
+          <div
+            style={{
+              width: !isMobile && viewMode === 'split' ? `${100 - splitRatio}%` : '100%',
+            }}
+            className={`h-full flex-col overflow-hidden ${
+              isMobile
+                ? mobileTab === 'preview'
+                  ? 'flex w-full'
+                  : 'hidden'
+                : viewMode === 'editor'
+                ? 'hidden'
+                : 'flex'
+            }`}
+          >
+            <LivePreview
+              markdown={activeDocument.markdown}
+              metadata={activeDocument.metadata}
+              settings={activeDocument.settings}
+            />
+          </div>
         </div>
       </div>
 

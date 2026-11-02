@@ -29,7 +29,10 @@
     margin: 0;
     padding: 0;
     height: 100%;
+    width: 100%;
+    overflow-x: hidden;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -39,12 +42,32 @@
   color: #1a1d1b;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 30px rgba(0,0,0,0.04);
   transition: all 0.2s ease;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .dark .paper-sheet {
   background: #171a1d;
   color: #e5e7eb;
   box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 8px 30px rgba(0,0,0,0.5);
+}
+
+/* Images inside Preview & Prose */
+.paper-sheet img,
+.prose img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5rem auto;
+  border-radius: 4px;
+}
+
+/* Links inside Preview & Prose */
+.prose a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Preset Typography Rules inside Document Preview */
@@ -86,51 +109,75 @@
   line-height: 1.55;
 }
 
-/* KaTeX adjustments */
-.katex-display {
-  margin: 1.25em 0 !important;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0.5em 0;
-}
-
-.katex {
-  font-size: 1.05em;
-}
-
+/* KaTeX adjustments with mobile-friendly touch scrolling */
 .katex-display-wrapper {
   margin: 1.25rem 0;
   text-align: center;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.25rem 0;
+}
+
+.katex-display {
+  margin: 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  padding: 0.25em 0;
+}
+
+.katex {
+  font-size: 1.05em;
+  max-width: 100%;
 }
 
 .katex-inline-wrapper {
   display: inline;
+  max-width: 100%;
+  overflow-wrap: normal;
 }
 
 .katex-error {
   max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* CodeMirror customizations */
 .cm-editor {
   height: 100%;
+  width: 100%;
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 13.5px;
+}
+
+@media (max-width: 767px) {
+  .cm-editor {
+    font-size: 14px; /* Prevents auto-zoom on mobile inputs */
+  }
 }
 
 .cm-scroller {
   font-family: 'JetBrains Mono', monospace !important;
   line-height: 1.6;
+  overflow-x: hidden !important;
+  touch-action: pan-y;
 }
 
 .cm-gutters {
   background-color: transparent !important;
   border-right: 1px solid var(--border-subtle) !important;
   color: var(--text-muted) !important;
+}
+
+/* Pre / Code block mobile horizontal scrolling */
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Custom Scrollbars */

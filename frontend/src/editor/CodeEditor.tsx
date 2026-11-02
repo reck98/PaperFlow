@@ -55,25 +55,28 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     EditorView.theme({
       '&': {
         height: '100%',
-        fontSize: '13.5px',
+        width: '100%',
+        fontSize: '14px',
         backgroundColor: 'transparent',
       },
       '.cm-scroller': {
         fontFamily: '"JetBrains Mono", "Fira Code", monospace',
         lineHeight: '1.65',
+        overflowX: 'hidden',
+        touchAction: 'pan-y',
       },
       '.cm-content': {
-        padding: '16px 0',
+        padding: '12px 0',
         caretColor: darkMode ? '#f59e0b' : '#b45309',
       },
       '.cm-line': {
-        padding: '0 16px',
+        padding: '0 10px',
       },
       '.cm-gutters': {
         backgroundColor: 'transparent',
         borderRight: '1px solid ' + (darkMode ? '#272b30' : '#e5e3dd'),
         color: darkMode ? '#6b7280' : '#9ca3af',
-        paddingRight: '6px',
+        paddingRight: '4px',
       },
       '.cm-activeLine': {
         backgroundColor: darkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',

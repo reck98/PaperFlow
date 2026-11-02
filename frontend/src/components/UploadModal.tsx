@@ -81,28 +81,29 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#faf9f6] dark:bg-[#141719] border border-gray-300 dark:border-gray-800 rounded-lg shadow-2xl w-full max-w-lg overflow-hidden text-gray-900 dark:text-gray-100 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-[#faf9f6] dark:bg-[#141719] border border-gray-300 dark:border-gray-800 rounded-lg shadow-2xl w-full max-w-[calc(100vw-1rem)] sm:max-w-lg max-h-[92dvh] overflow-hidden text-gray-900 dark:text-gray-100 animate-in fade-in zoom-in-95 duration-150 flex flex-col text-xs">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-none">
           <div className="flex items-center space-x-2.5">
             <Upload className="w-4 h-4 text-amber-600" />
             <h2 className="text-sm font-semibold">Upload Markdown Document</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            aria-label="Close upload dialog"
+            className="p-1.5 rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1">
           {error && (
             <div className="mb-4 p-3 rounded bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 text-xs flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 flex-none" />
-              <span>{error}</span>
+              <span className="break-words">{error}</span>
             </div>
           )}
 
@@ -111,7 +112,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-5 sm:p-8 text-center cursor-pointer transition-colors ${
               isDragging
                 ? 'border-amber-600 bg-amber-50/50 dark:bg-amber-950/20'
                 : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 bg-white/50 dark:bg-gray-900/40'
@@ -125,12 +126,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               className="hidden"
             />
 
-            <Upload className="w-8 h-8 mx-auto text-amber-700 dark:text-amber-500 mb-3" />
-            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+            <Upload className="w-7 h-7 sm:w-8 sm:h-8 mx-auto text-amber-700 dark:text-amber-500 mb-2 sm:mb-3" />
+            <p className="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200">
               Drag & drop your Markdown file here
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Supports .md, .markdown, and .txt up to 10MB
+            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Tap or click to browse. Supports .md, .markdown, .txt up to 10MB
             </p>
           </div>
 
@@ -139,7 +140,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               <div className="flex items-center space-x-2 truncate pr-2">
                 <FileText className="w-4 h-4 text-emerald-600 flex-none" />
                 <span className="font-medium truncate">{selectedFile.name}</span>
-                <span className="text-gray-400 text-[11px]">
+                <span className="text-gray-400 text-[11px] flex-none">
                   ({(selectedFile.size / 1024).toFixed(1)} KB)
                 </span>
               </div>
@@ -149,17 +150,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-800 bg-[#f5f3ef]/50 dark:bg-[#111315]/50 flex items-center justify-end space-x-2">
+        <div className="px-4 sm:px-5 py-3 border-t border-gray-200 dark:border-gray-800 bg-[#f5f3ef]/50 dark:bg-[#111315]/50 flex items-center justify-end space-x-2 flex-none">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="px-3.5 py-2 border border-gray-300 dark:border-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors min-h-[38px]"
           >
             Cancel
           </button>
           <button
             onClick={handleImport}
             disabled={!selectedFile}
-            className="px-4 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded text-xs font-medium transition-colors disabled:opacity-40"
+            className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded text-xs font-medium transition-colors disabled:opacity-40 min-h-[38px] active:scale-95"
           >
             Import Document
           </button>
