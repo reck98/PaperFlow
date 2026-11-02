@@ -1,0 +1,55 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+.pnpm-store/
+**/.pnpm-store/
+
+# Local binaries (large executables - download via scripts/setup_binaries.ps1)
+bin/*
+!bin/.gitkeep
+
+# Build and distribution artifacts
+dist/
+**/dist/
+build/
+**/build/
+.output/
+
+# Generated PDF outputs (keep sample PDFs)
+*.pdf
+!samples/*.pdf
+
+# Environment and sensitive keys
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and IDE configurations
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary files & caches
+tmp/
+temp/
+.temp/
+.taste-skill/

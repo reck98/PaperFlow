@@ -1,0 +1,13 @@
+{
+  "name": "paperflow-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Paperflow - From Markdown to beautifully typeset documents",
+  "scripts": {
+    "dev": "pnpm --filter paperflow-backend dev & pnpm --filter paperflow-frontend dev",
+    "dev:backend": "pnpm --filter paperflow-backend dev",
+    "dev:frontend": "pnpm --filter paperflow-frontend dev",
+    "build": "pnpm --filter paperflow-backend build && pnpm --filter paperflow-frontend build",
+    "start": "node backend/dist/server.js"
+  }
+}
