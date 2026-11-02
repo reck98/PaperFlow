@@ -6,6 +6,7 @@
 
 A modern, high-performance Markdown editor and vector PDF publishing tool with first-class LaTeX mathematical typesetting.
 
+[![Live App](https://img.shields.io/badge/Live_App-paperflow.reck98.in-brightgreen?style=flat&logo=render&logoColor=white)](https://paperflow.reck98.in/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -15,6 +16,10 @@ A modern, high-performance Markdown editor and vector PDF publishing tool with f
 [![Issues](https://img.shields.io/github/issues/reck98/PaperFlow?style=flat&color=red)](https://github.com/reck98/PaperFlow/issues)
 [![Last Commit](https://img.shields.io/github/last-commit/reck98/PaperFlow?style=flat)](https://github.com/reck98/PaperFlow/commits/main)
 
+<p align="center">
+  <a href="https://paperflow.reck98.in/"><strong>🌐 Try the Live Demo at paperflow.reck98.in &rarr;</strong></a>
+</p>
+
 </div>
 
 ---
@@ -22,6 +27,7 @@ A modern, high-performance Markdown editor and vector PDF publishing tool with f
 ## Table of Contents
 
 - [Overview](#overview)
+- [Live Demo](#live-demo)
 - [Features](#features)
 - [Screenshots](#screenshots)
 - [Architecture](#architecture)
@@ -45,6 +51,14 @@ A modern, high-performance Markdown editor and vector PDF publishing tool with f
 Paperflow is an open-source document authoring application designed to convert Markdown documents into publication-quality vector PDFs. Built for researchers, engineers, and educators, it combines an in-browser Markdown editor with real-time LaTeX math rendering and a server-side typesetting pipeline powered by **Pandoc** and **Typst**.
 
 Unlike browser screenshot tools or heavyweight multi-gigabyte TeX Live installations, Paperflow produces searchable, selectable vector PDFs with embedded fonts and sharp equation typography in 150–350 milliseconds.
+
+---
+
+## Live Demo
+
+Paperflow is deployed and live at **[paperflow.reck98.in](https://paperflow.reck98.in/)**.
+
+You can explore the editor, test mathematical typesetting with sample papers, and export publication-ready PDFs directly in your browser without any installation.
 
 ---
 
