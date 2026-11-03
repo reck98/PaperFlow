@@ -176,11 +176,11 @@ export function renderMarkdownWithMath(markdown: string): string {
     text = text.replace(item.placeholder, () => item.original);
   }
 
-  // 6. Custom marked renderer for headings (with auto IDs), tables, blockquotes, and code
+  // 6. Custom marked renderer for headings (with auto IDs), tables, blockquotes, code, and links
   const renderer = new marked.Renderer();
 
-  renderer.heading = ({ tokens, depth }) => {
-    const headingText = marked.parseInline(tokens.map((t) => t.raw).join('')) as string;
+  renderer.heading = function ({ tokens, depth }) {
+    const headingText = tokens && tokens.length > 0 ? this.parser.parseInline(tokens) : '';
     const plainText = headingText.replace(/<[^>]*>/g, '').trim();
     const id = plainText
       .toLowerCase()
@@ -200,13 +200,13 @@ export function renderMarkdownWithMath(markdown: string): string {
     return `<h${depth} id="${id}" class="${sizeClass} scroll-mt-20 group relative">${headingText}</h${depth}>`;
   };
 
-  renderer.table = (token) => {
+  renderer.table = function (token) {
     const headerHtml = token.header
       .map(
         (cell) =>
-          `<th class="px-4 py-2 text-left font-semibold border-b-2 border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/40 text-xs">${marked.parseInline(
-            cell.tokens.map((t) => t.raw).join('')
-          )}</th>`
+          `<th class="px-4 py-2 text-left font-semibold border-b-2 border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/40 text-xs">${
+            cell.tokens ? this.parser.parseInline(cell.tokens) : escapeHtml(cell.text || '')
+          }</th>`
       )
       .join('');
     const rowsHtml = token.rows
@@ -214,9 +214,9 @@ export function renderMarkdownWithMath(markdown: string): string {
         const cells = row
           .map(
             (cell) =>
-              `<td class="px-4 py-2 border-b border-gray-200 dark:border-gray-800 text-sm">${marked.parseInline(
-                cell.tokens.map((t) => t.raw).join('')
-              )}</td>`
+              `<td class="px-4 py-2 border-b border-gray-200 dark:border-gray-800 text-sm">${
+                cell.tokens ? this.parser.parseInline(cell.tokens) : escapeHtml(cell.text || '')
+              }</td>`
           )
           .join('');
         return `<tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition-colors">${cells}</tr>`;
@@ -233,13 +233,12 @@ export function renderMarkdownWithMath(markdown: string): string {
     `;
   };
 
-  renderer.blockquote = ({ text: quoteText }) => {
-    return `<blockquote class="my-5 border-l-4 border-amber-600/70 dark:border-amber-500 pl-4 py-1 italic text-gray-700 dark:text-gray-300 bg-amber-50/20 dark:bg-amber-950/10 rounded-r">${marked.parse(
-      quoteText
-    )}</blockquote>`;
+  renderer.blockquote = function ({ tokens, text }) {
+    const body = tokens && tokens.length > 0 ? this.parser.parse(tokens) : (text ? escapeHtml(text) : '');
+    return `<blockquote class="my-5 border-l-4 border-amber-600/70 dark:border-amber-500 pl-4 py-1 italic text-gray-700 dark:text-gray-300 bg-amber-50/20 dark:bg-amber-950/10 rounded-r">${body}</blockquote>`;
   };
 
-  renderer.code = ({ text: code, lang }) => {
+  renderer.code = function ({ text: code, lang }) {
     const language = lang || 'text';
     return `
       <div class="my-5 rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-900 text-gray-100 font-mono text-xs max-w-full">
@@ -251,7 +250,7 @@ export function renderMarkdownWithMath(markdown: string): string {
     `;
   };
 
-  renderer.image = ({ href, title, text }) => {
+  renderer.image = function ({ href, title, text }) {
     const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
     const altAttr = text ? ` alt="${escapeHtml(text)}"` : ' alt="Document Image"';
     return `
@@ -262,10 +261,11 @@ export function renderMarkdownWithMath(markdown: string): string {
     `;
   };
 
-  renderer.link = ({ href, title, tokens }) => {
-    const linkText = marked.parseInline(tokens.map((t) => t.raw).join('')) as string;
+  renderer.link = function ({ href, title, tokens, text }) {
+    const linkText = tokens && tokens.length > 0 ? this.parser.parseInline(tokens) : escapeHtml(text || href || '');
+    const cleanHref = href ? escapeHtml(href) : '';
     const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-    return `<a href="${escapeHtml(href)}" class="text-amber-700 dark:text-amber-400 underline underline-offset-2 break-words hover:text-amber-800 dark:hover:text-amber-300 transition-colors"${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+    return `<a href="${cleanHref}" class="text-amber-700 dark:text-amber-400 underline underline-offset-2 break-words hover:text-amber-800 dark:hover:text-amber-300 transition-colors"${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`;
   };
 
   marked.setOptions({
