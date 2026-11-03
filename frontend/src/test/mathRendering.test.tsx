@@ -332,6 +332,29 @@ i\\hbar \\frac{\\partial}{\\partial t} |\\psi(t)\\rangle = \\hat{H} |\\psi(t)\\r
     expect(normalizeMathInner('A^{\\*} = B')).toBe('A^{\\ast} = B');
     expect(normalizeMathInner('r_j=\\int_0^T r(t)\\phi_j(t)\\\\,dt')).toBe('r_j=\\int_0^T r(t)\\phi_j(t)\\,dt');
     expect(normalizeMathInner('x\\\\;y\\\\:z\\\\!w')).toBe('x\\;y\\:z\\!w');
+    expect(normalizeMathInner('PM(r,s_1)\\<PM(r,s_2)')).toBe('PM(r,s_1)<PM(r,s_2)');
+    expect(normalizeMathInner('PM(r,s_1)\\\\<PM(r,s_2)')).toBe('PM(r,s_1)<PM(r,s_2)');
+    expect(normalizeMathInner('PM(r,s_1)\\>PM(r,s_2)')).toBe('PM(r,s_1)>PM(r,s_2)');
+    expect(normalizeMathInner('a \\<= b')).toBe('a <= b');
+    expect(normalizeMathInner('a \\>= b')).toBe('a >= b');
+  });
+
+  it('renders escaped inequality operators \\< and \\> without KaTeX parse error', () => {
+    const md1 = '\\[ PM(r,s_1)\\<PM(r,s_2) \\]';
+    const html1 = renderMarkdownWithMath(md1);
+    expect(html1).toContain('class="katex-display"');
+    expect(html1).not.toContain('katex-error');
+    expect(html1).not.toContain('Undefined control sequence: \\<');
+
+    const md2 = '\\[ PM(r,s_1)\\>PM(r,s_2) \\]';
+    const html2 = renderMarkdownWithMath(md2);
+    expect(html2).toContain('class="katex-display"');
+    expect(html2).not.toContain('katex-error');
+
+    const md3 = 'When $PM(r,s_1) \\< PM(r,s_2)$, the decision is $s_2$.';
+    const html3 = renderMarkdownWithMath(md3);
+    expect(html3).toContain('class="katex"');
+    expect(html3).not.toContain('katex-error');
   });
 
   it('renders integral with double-escaped thin space \\\\, on single line without line break', () => {
@@ -375,5 +398,47 @@ $$ r_j=\\int_0^T r(t)\\phi_j(t)\\\\,dt $$
     // Ensure display equations are rendered
     const displayElements = container.querySelectorAll('.katex-display');
     expect(displayElements.length).toBe(3);
+  });
+
+  it('renders probability metric comparison document with \\[ PM(r,s_1)\\<PM(r,s_2) \\] without error', async () => {
+    const markdown = `
+\\[ PM(r,s_1)=p\\,p(r\\mid s_1) \\]
+
+\\[ PM(r,s_2)=(1-p)p(r\\mid s_2) \\]
+
+The receiver compares these two metrics.
+
+If:
+
+\\[ PM(r,s_1)>PM(r,s_2) \\]
+
+the receiver decides that \\(s_1\\) was transmitted.
+
+If:
+
+\\[ PM(r,s_1)\\<PM(r,s_2) \\]
+
+the receiver decides that \\(s_2\\) was transmitted.
+
+### 5. Probability metric ratio test
+
+Your notes write:
+
+\\[ \\boxed{ \\frac{PM(r,s_1)}{PM(r,s_2)} \\underset{s_2}{\\overset{s_1}{\\gtrless}}1 } \\]
+`;
+    const { container } = render(
+      <LivePreview
+        markdown={markdown}
+        metadata={defaultMeta}
+        settings={DEFAULT_DOCUMENT_SETTINGS}
+      />
+    );
+
+    // Ensure no KaTeX parse error banner is rendered
+    expect(container.querySelector('.katex-error')).toBeNull();
+
+    // Ensure all 5 display equations are rendered
+    const displayElements = container.querySelectorAll('.katex-display');
+    expect(displayElements.length).toBe(5);
   });
 });

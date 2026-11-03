@@ -336,6 +336,55 @@ ${Array.from({ length: 8 }, (_, i) => `### Section ${i + 3}\n\nParagraph text de
     }
   }
 
+  // Test 11: Escaped Comparison & Inequality Operators Normalization
+  console.log('\n--- Test 11: Escaped Comparison & Inequality Operators Normalization ---');
+  assert(normalizeMathInner('PM(r,s_1)\\<PM(r,s_2)') === 'PM(r,s_1)<PM(r,s_2)', 'normalizeMathInner converts \\< to <');
+  assert(normalizeMathInner('PM(r,s_1)\\\\<PM(r,s_2)') === 'PM(r,s_1)<PM(r,s_2)', 'normalizeMathInner converts \\\\< to <');
+  assert(normalizeMathInner('PM(r,s_1)\\>PM(r,s_2)') === 'PM(r,s_1)>PM(r,s_2)', 'normalizeMathInner converts \\> to >');
+  assert(normalizeMathInner('a \\<= b') === 'a <= b', 'normalizeMathInner converts \\<= to <=');
+  assert(normalizeMathInner('a \\>= b') === 'a >= b', 'normalizeMathInner converts \\>= to >=');
+
+  const metricComparisonMd = `
+# Probability Metric Decision Rules
+
+The receiver compares these two metrics:
+
+\\[ PM(r,s_1)=p\\,p(r\\mid s_1) \\]
+
+\\[ PM(r,s_2)=(1-p)p(r\\mid s_2) \\]
+
+The receiver compares these two metrics.
+
+If:
+
+\\[ PM(r,s_1)>PM(r,s_2) \\]
+
+the receiver decides that \\(s_1\\) was transmitted.
+
+If:
+
+\\[ PM(r,s_1)\\<PM(r,s_2) \\]
+
+the receiver decides that \\(s_2\\) was transmitted.
+
+### 5. Probability metric ratio test
+
+Your notes write:
+
+\\[ \\boxed{ \\frac{PM(r,s_1)}{PM(r,s_2)} \\underset{s_2}{\\overset{s_1}{\\gtrless}}1 } \\]
+`;
+
+  const metricRes = await generatePdf({
+    markdown: metricComparisonMd,
+    settings: DEFAULT_SETTINGS,
+  });
+
+  assert(Buffer.isBuffer(metricRes.buffer) && metricRes.buffer.length > 5000, `Probability metric PDF generated successfully (${metricRes.buffer.length} bytes)`);
+  assert(metricRes.buffer.slice(0, 5).toString('ascii') === '%PDF-', 'Probability metric PDF contains valid %PDF- magic bytes');
+  assert(metricRes.typstSource.includes('$ P M (r , s_1) < P M (r , s_2) $') || metricRes.typstSource.includes('< P M (r'), 'Typst source contains properly converted less-than math equation');
+  assert(!metricRes.typstSource.includes('\\<'), 'Typst source does not contain illegal \\< control sequence');
+  assert(!metricRes.typstSource.includes('\\$\\$ PM(r,s\\_1)'), 'TeX math does not fall back to escaped text for less-than equation');
+
   console.log('\n======================================================');
   console.log(`Results: ${passedTests} / ${totalTests} assertions passed (${failedTests} failed)`);
   console.log('======================================================\n');

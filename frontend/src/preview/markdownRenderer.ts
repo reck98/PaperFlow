@@ -100,7 +100,9 @@ export function normalizeMathInner(inner: string): string {
     // 6. Escaped asterisks from Markdown (\* or \\*): in LaTeX math, \* is undefined; replace with \ast
     .replace(/\\+\*(?=[a-zA-Z])/g, '\\ast ')
     .replace(/\\+\*/g, '\\ast')
-    // 7. Collapse internal blank lines which cause Pandoc's TeX math parser to abort
+    // 7. Escaped comparison operators from Markdown (\+< or \+>): in LaTeX math, \< is undefined and \> is spacing
+    .replace(/\\+([<>])/g, (_m, op) => op)
+    // 8. Collapse internal blank lines which cause Pandoc's TeX math parser to abort
     .replace(/\r?\n\s*\r?\n/g, '\n');
 }
 
