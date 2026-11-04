@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "76623a0d-6ad4-4c1e-a3e5-3e8129eab64c",
+  "deliveryReceiptId": "fbbe08e6-a436-4a55-b494-fc722b2efa0f",
   "artifact": {
     "path": "E:\\Development\\Projects\\PaperFlow\\architecture\\business-workflow.html",
-    "sha256": "7adf995af9401bffe22d0c4d7a60c0151c12c2c342dfcdc6f39231e602bc54f1",
-    "bytes": 842886
+    "sha256": "a6772b0723de582e98551fefb57727dc77fc9dcd0d19f84129a2d53a4f9f0c63",
+    "bytes": 842828
   },
   "state": {
     "detail": "read",

@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "297ec1c5-4c22-43b5-8b79-08ed58419a10",
+  "deliveryReceiptId": "b33d5ad0-2157-491f-a258-9a4b8c8d3165",
   "artifact": {
     "path": "E:\\Development\\Projects\\PaperFlow\\architecture\\request-journey.html",
-    "sha256": "088b8ecbd69dad01cbb806e3612b43cabecf2463ec2ae157852791440d6e2d0c",
-    "bytes": 846164
+    "sha256": "8de88ca62160a94e27d024b2189bc5459f9edf8b58285b6c5c1c42a5f61179e8",
+    "bytes": 846106
   },
   "state": {
     "detail": "read",

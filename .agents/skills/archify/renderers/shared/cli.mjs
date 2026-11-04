@@ -368,15 +368,13 @@ export function svgRootAttrs(meta, explicitQualityProfile) {
   const requestedProfile = explicitQualityProfile || process.env.ARCHIFY_QUALITY_PROFILE || meta.quality_profile;
   const qualityProfile = requestedProfile === 'showcase' ? 'showcase' : 'standard';
   const advisory = requestedProfile ? '' : ' data-quality-gates="advisory"';
-  return `role="img" lang="${esc(resolveLocale(meta.locale))}" aria-labelledby="archify-diagram-title archify-diagram-description"${animation}${preset}${engineeringProfile} data-quality-profile="${esc(qualityProfile)}"${advisory}`;
+  return `role="img" lang="${esc(resolveLocale(meta.locale))}" aria-label="${esc(meta.title)}" aria-describedby="archify-diagram-description"${animation}${preset}${engineeringProfile} data-quality-profile="${esc(qualityProfile)}"${advisory}`;
 }
 
-// Keep the accessible name inside the SVG so it survives standalone SVG
-// export and embedding. The fixed IDs are deterministic because an Archify
-// artifact intentionally contains one primary diagram SVG.
+// Keep the accessible description inside the SVG without emitting <title> which triggers browser tooltips.
 export function svgAccessibleText(meta, kind) {
   const description = meta.subtitle || translateMessage(meta.locale, `diagram.description.${kind}`);
-  return `        <title id="archify-diagram-title">${esc(meta.title)}</title>\n        <desc id="archify-diagram-description">${esc(description)}</desc>`;
+  return `        <desc id="archify-diagram-description">${esc(description)}</desc>`;
 }
 
 export function animateAttr(meta, kind, step) {
