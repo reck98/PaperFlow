@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "759b1933-45a8-46f3-bca2-efb559362fae",
+  "status": "current",
+  "command": "deliver",
+  "type": "dataflow",
+  "input": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\08-data-flow.candidate.json",
+  "output": "E:\\Development\\Projects\\PaperFlow\\architecture\\data-flow.html",
+  "specification": {
+    "sha256": "421cf1887859d00c7deadc44f9a36f9abfb9009a137ecf84128c98cb159b1070",
+    "bytes": 4318
+  },
+  "artifact": {
+    "sha256": "13c1311feb37b491662eac29ae98f0a80f9e50ce9d4546bd0f45e4203310ac7e",
+    "bytes": 841802
+  }
+}

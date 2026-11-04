@@ -85,6 +85,7 @@ RUN cd backend && npm install --omit=dev
 
 COPY --from=backend-builder --chown=paperflow:paperflow /app/backend/dist ./backend/dist
 COPY --from=frontend-builder --chown=paperflow:paperflow /app/frontend/dist ./frontend/dist
+COPY --chown=paperflow:paperflow architecture ./architecture
 
 # 6. Verify installed typesetting engines during build
 RUN pandoc --version && \

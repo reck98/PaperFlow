@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "30e5df24-f0d5-427f-9f81-4d583176e36f",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\07-deployment-architecture.candidate.json",
+  "output": "E:\\Development\\Projects\\PaperFlow\\architecture\\deployment-architecture.html",
+  "specification": {
+    "sha256": "1b84960498abce26edd6e8bf268968c7d9a3cae6601ca6cfe3513ad4857d4d6e",
+    "bytes": 4737
+  },
+  "artifact": {
+    "sha256": "2ac979407f39d6fda43c8352af4491618bc2fc095670142449d9e09ff67f2e95",
+    "bytes": 846929
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "297ec1c5-4c22-43b5-8b79-08ed58419a10",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\02-request-journey.candidate.json",
+  "output": "E:\\Development\\Projects\\PaperFlow\\architecture\\request-journey.html",
+  "specification": {
+    "sha256": "b59515df5131265b446fed0ad4214ab50bde6c8fe870b2b1cfc42c6f379294dd",
+    "bytes": 5130
+  },
+  "artifact": {
+    "sha256": "088b8ecbd69dad01cbb806e3612b43cabecf2463ec2ae157852791440d6e2d0c",
+    "bytes": 846164
+  }
+}

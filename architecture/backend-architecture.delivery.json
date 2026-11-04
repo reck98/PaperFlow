@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "a0c528c4-4a15-4b89-ac9b-a4adbfb1a6f0",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\04-backend-architecture.candidate.json",
+  "output": "E:\\Development\\Projects\\PaperFlow\\architecture\\backend-architecture.html",
+  "specification": {
+    "sha256": "828935fbb9f2e2b2c22d9a2622296738db4ee67375ace42468ba706fb85e4b47",
+    "bytes": 5807
+  },
+  "artifact": {
+    "sha256": "125e96949d81608911719f774def033c3871331abce251c2916accbce0e8cc57",
+    "bytes": 856990
+  }
+}

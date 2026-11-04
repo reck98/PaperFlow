@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "lifecycle",
+  "quality": "showcase",
+  "specification": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\06-authentication-flow.candidate.json",
+    "sha256": "2f5f45ca3cf71d4c6fb9b272695fb5085aa61dc4e853c8b708a05ea65df5be88",
+    "bytes": 4105
+  },
+  "artifact": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\architecture\\authentication-flow.html",
+    "sha256": "7125e4c6c67390eebafa20e1f11380bc9e0128a6209c30d0bf2f4278e98a6192",
+    "bytes": 846631
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\authentication-flow.finalize.json",
+    "summaryReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\authentication-flow.finalize-summary.json",
+    "browserCheckReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\authentication-flow.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-04T09:12:27.984Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 4192,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 5
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "check-size",
+            "from": "payload_check",
+            "to": "rejected_size",
+            "label": "&gt;5MB",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "check-type",
+            "from": "payload_check",
+            "to": "rejected_type",
+            "label": "invalid",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "point": [
+            728,
+            143.99999999999994
+          ],
+          "sharedNode": "payload_check"
+        },
+        {
+          "left": {
+            "id": "check-size",
+            "from": "payload_check",
+            "to": "rejected_size",
+            "label": "&gt;5MB",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "err-recovery",
+            "from": "compile_error",
+            "to": "local_sandbox",
+            "label": "toast",
+            "collectionIndex": 8,
+            "artifactIndex": 9
+          },
+          "point": [
+            728,
+            125.99999999999999
+          ]
+        },
+        {
+          "left": {
+            "id": "check-size",
+            "from": "payload_check",
+            "to": "rejected_size",
+            "label": "&gt;5MB",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "type-recovery",
+            "from": "rejected_type",
+            "to": "local_sandbox",
+            "label": "alert",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "point": [
+            562.3,
+            161.99999999999997
+          ]
+        },
+        {
+          "left": {
+            "id": "check-type",
+            "from": "payload_check",
+            "to": "rejected_type",
+            "label": "invalid",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "right": {
+            "id": "err-recovery",
+            "from": "compile_error",
+            "to": "local_sandbox",
+            "label": "toast",
+            "collectionIndex": 8,
+            "artifactIndex": 9
+          },
+          "point": [
+            748.3000000000001,
+            142.77272727272722
+          ]
+        },
+        {
+          "left": {
+            "id": "size-recovery",
+            "from": "rejected_size",
+            "to": "local_sandbox",
+            "label": "alert",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "right": {
+            "id": "type-recovery",
+            "from": "rejected_type",
+            "to": "local_sandbox",
+            "label": "alert",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "point": [
+            378.29999999999995,
+            143.04545454545453
+          ],
+          "sharedNode": "local_sandbox"
+        }
+      ],
+      "detours": [],
+      "truncated": false
+    },
+    "repair": "Advisory only: this mode places or routes these relationships itself. Report them; do not remove relationships or meaning to reduce crossings."
+  }
+}

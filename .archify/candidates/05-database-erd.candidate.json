@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "diagram_type": "erd",
+  "meta": {
+    "title": "PaperFlow Physical & In-Memory Entity Schema",
+    "subtitle": "Browser IndexedDB ObjectStore, LocalStorage Keys, Wire DTOs, & Ephemeral Filesystem Entities",
+    "output": "architecture/database-erd.html",
+    "quality_profile": "standard"
+  },
+  "layout": {
+    "mode": "grid",
+    "entityW": 300,
+    "gapX": 70,
+    "gapY": 40
+  },
+  "entities": [
+    {
+      "id": "paperflow_document",
+      "label": "paperflow_document",
+      "sublabel": "IndexedDB Store: documents",
+      "tag": "client_storage",
+      "row": 0,
+      "col": 0,
+      "attributes": [
+        { "name": "id", "type": "string", "key": "pk" },
+        { "name": "title", "type": "varchar(255)" },
+        { "name": "markdown", "type": "text" },
+        { "name": "metadata_title", "type": "varchar(255)" },
+        { "name": "metadata_author", "type": "varchar(120)" },
+        { "name": "metadata_subtitle", "type": "varchar(255)" },
+        { "name": "metadata_date", "type": "varchar(60)" },
+        { "name": "metadata_abstract", "type": "text" },
+        { "name": "settings_preset", "type": "varchar(20)" },
+        { "name": "settings_page_size", "type": "varchar(16)" },
+        { "name": "settings_orientation", "type": "varchar(16)" },
+        { "name": "settings_margins", "type": "varchar(16)" },
+        { "name": "settings_font_size", "type": "varchar(10)" },
+        { "name": "settings_line_spacing", "type": "float" },
+        { "name": "settings_include_toc", "type": "boolean" },
+        { "name": "settings_numbered_headings", "type": "boolean" },
+        { "name": "settings_page_numbering", "type": "varchar(20)" },
+        { "name": "settings_two_column", "type": "boolean" },
+        { "name": "created_at", "type": "bigint" },
+        { "name": "updated_at", "type": "bigint" }
+      ]
+    },
+    {
+      "id": "browser_preference",
+      "label": "browser_preference",
+      "sublabel": "Browser LocalStorage",
+      "tag": "client_storage",
+      "row": 1,
+      "col": 0,
+      "attributes": [
+        { "name": "key", "type": "varchar(64)", "key": "pk" },
+        { "name": "active_doc_id", "type": "string", "key": "fk", "references": "paperflow_document.id" },
+        { "name": "paperflow_theme", "type": "varchar(16)" }
+      ]
+    },
+    {
+      "id": "export_request",
+      "label": "export_request",
+      "sublabel": "HTTP POST /api/pdf DTO",
+      "tag": "transport_dto",
+      "row": 0,
+      "col": 1,
+      "attributes": [
+        { "name": "request_id", "type": "uuid", "key": "pk" },
+        { "name": "document_id", "type": "string", "key": "fk", "references": "paperflow_document.id" },
+        { "name": "markdown", "type": "text" },
+        { "name": "metadata", "type": "json" },
+        { "name": "settings", "type": "json" }
+      ]
+    },
+    {
+      "id": "image_attachment",
+      "label": "image_attachment",
+      "sublabel": "ExportPdfRequest.images[]",
+      "tag": "transport_dto",
+      "row": 1,
+      "col": 1,
+      "attributes": [
+        { "name": "attachment_id", "type": "varchar(64)", "key": "pk" },
+        { "name": "request_id", "type": "uuid", "key": "fk", "references": "export_request.request_id" },
+        { "name": "filename", "type": "varchar(255)" },
+        { "name": "data", "type": "text" }
+      ]
+    },
+    {
+      "id": "ephemeral_scratch_asset",
+      "label": "ephemeral_scratch_asset",
+      "sublabel": "os.tmpdir()/paperflow-* FS",
+      "tag": "runtime_scratch",
+      "row": 0,
+      "col": 2,
+      "attributes": [
+        { "name": "file_path", "type": "varchar(512)", "key": "pk" },
+        { "name": "request_id", "type": "uuid", "key": "fk", "references": "export_request.request_id" },
+        { "name": "file_name", "type": "varchar(255)" },
+        { "name": "mime_type", "type": "varchar(80)" },
+        { "name": "size_bytes", "type": "bigint" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-pref-doc",
+      "from": "browser_preference",
+      "to": "paperflow_document",
+      "fromCardinality": "one",
+      "toCardinality": "one",
+      "label": "tracks active"
+    },
+    {
+      "id": "rel-doc-export",
+      "from": "paperflow_document",
+      "to": "export_request",
+      "fromCardinality": "one",
+      "toCardinality": "many",
+      "label": "serialized as"
+    },
+    {
+      "id": "rel-export-images",
+      "from": "export_request",
+      "to": "image_attachment",
+      "fromCardinality": "one",
+      "toCardinality": "many",
+      "label": "includes"
+    },
+    {
+      "id": "rel-export-scratch",
+      "from": "export_request",
+      "to": "ephemeral_scratch_asset",
+      "fromCardinality": "one",
+      "toCardinality": "many",
+      "label": "extracts to"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "IndexedDB Physical Entity",
+      "items": [
+        "DB Name: paperflow_db, Version: 1, ObjectStore: documents",
+        "KeyPath: 'id' using UUID / timestamp alphanumeric format",
+        "Sorted at query time by updatedAt descending"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Wire & DTO Structure",
+      "items": [
+        "ExportPdfRequest combines raw Markdown, metadata, settings, and attachments",
+        "Supports embedded inline Base64 data URLs as well as structured image arrays",
+        "No server-side database tables; wire objects map directly to memory"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Scratch Filesystem Mapping",
+      "items": [
+        "Intermediate disk artifacts: input.md, body.typ, document.typ, document.pdf",
+        "Sanitized image filenames stored directly in the temporary folder root",
+        "Automatically deleted recursively in execution finally block"
+      ]
+    }
+  ]
+}

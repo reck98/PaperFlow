@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "4fb3b203-6375-45de-9d86-a84416dce6aa",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\01-system-architecture.candidate.json",
+  "output": "E:\\Development\\Projects\\PaperFlow\\architecture\\system-architecture.html",
+  "specification": {
+    "sha256": "1723ea2ad7d779b8150fe988dbff154c927acc29606b069fdc7633b4c7008e92",
+    "bytes": 5880
+  },
+  "artifact": {
+    "sha256": "525f17f48fa489e5d5dc9fb1cb0365faf030cc131932acce7551ff59f646fcef",
+    "bytes": 856426
+  }
+}

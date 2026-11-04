@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PaperFlow Complete System Architecture",
+    "subtitle": "Local-First Reactive Frontend with Ephemeral Pandoc & Typst Vector Typesetting Pipeline",
+    "output": "architecture/system-architecture.html",
+    "quality_profile": "showcase",
+    "animation": "trace"
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Author / Researcher",
+      "sublabel": "Desktop / Tablet Browser",
+      "pos": [40, 220],
+      "size": [130, 60],
+      "icon": "person"
+    },
+    {
+      "id": "fe_spa",
+      "type": "frontend",
+      "label": "React 18 SPA",
+      "sublabel": "Vite + Tailwind CSS",
+      "pos": [220, 220],
+      "size": [150, 60],
+      "icon": "frontend"
+    },
+    {
+      "id": "fe_editor",
+      "type": "frontend",
+      "label": "CodeMirror 6 Editor",
+      "sublabel": "Markdown & Cursor State",
+      "pos": [430, 110],
+      "size": [160, 60]
+    },
+    {
+      "id": "fe_preview",
+      "type": "frontend",
+      "label": "Live KaTeX Preview",
+      "sublabel": "Realtime Math & A4 Emulation",
+      "pos": [430, 220],
+      "size": [160, 60]
+    },
+    {
+      "id": "fe_api",
+      "type": "frontend",
+      "label": "API Client Layer",
+      "sublabel": "services/api.ts (Fetch)",
+      "pos": [430, 330],
+      "size": [160, 60]
+    },
+    {
+      "id": "fe_db",
+      "type": "database",
+      "label": "Browser IndexedDB",
+      "sublabel": "paperflow_db : documents",
+      "pos": [220, 350],
+      "size": [150, 60],
+      "tag": "local-first",
+      "icon": "database"
+    },
+    {
+      "id": "be_nginx",
+      "type": "cloud",
+      "label": "Nginx Reverse Proxy",
+      "sublabel": "Port 80 : Gzip & 25MB Body",
+      "pos": [660, 220],
+      "size": [150, 60],
+      "icon": "cloud"
+    },
+    {
+      "id": "be_express",
+      "type": "backend",
+      "label": "Express App Server",
+      "sublabel": "Node.js 22 : Port 3000",
+      "pos": [870, 220],
+      "size": [150, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "be_service",
+      "type": "backend",
+      "label": "PDF Service Engine",
+      "sublabel": "pdfService.ts & Presets",
+      "pos": [1080, 220],
+      "size": [160, 60]
+    },
+    {
+      "id": "be_tmp",
+      "type": "database",
+      "label": "Ephemeral Scratch",
+      "sublabel": "os.tmpdir()/paperflow-*",
+      "pos": [1080, 360],
+      "size": [160, 60],
+      "tag": "auto-cleaned",
+      "icon": "database"
+    },
+    {
+      "id": "be_pandoc",
+      "type": "backend",
+      "label": "Pandoc CLI v3.6.3",
+      "sublabel": "Markdown to Typst AST",
+      "pos": [1300, 150],
+      "size": [160, 60]
+    },
+    {
+      "id": "be_typst",
+      "type": "backend",
+      "label": "Typst CLI v0.13.0",
+      "sublabel": "Vector Typesetting Core",
+      "pos": [1300, 280],
+      "size": [160, 60]
+    },
+    {
+      "id": "be_fonts",
+      "type": "cloud",
+      "label": "System Font Pack",
+      "sublabel": "Linux Libertine, Inter, Roboto",
+      "pos": [1300, 410],
+      "size": [160, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Client Browser Sandbox (Local-First Architecture)",
+      "wraps": ["fe_spa", "fe_editor", "fe_preview", "fe_api", "fe_db"]
+    },
+    {
+      "kind": "region",
+      "label": "Docker Container (paperflow-app : Debian Bookworm)",
+      "wraps": ["be_nginx", "be_express", "be_service", "be_tmp", "be_pandoc", "be_typst", "be_fonts"]
+    }
+  ],
+  "connections": [
+    { "id": "user-to-spa", "from": "user", "to": "fe_spa", "label": "authoring", "variant": "emphasis" },
+    { "id": "spa-to-editor", "from": "fe_spa", "to": "fe_editor", "label": "keystrokes" },
+    { "id": "spa-to-preview", "from": "fe_spa", "to": "fe_preview", "label": "live KaTeX", "variant": "emphasis" },
+    { "id": "spa-to-db", "from": "fe_spa", "to": "fe_db", "label": "autosave", "variant": "dashed" },
+    { "id": "spa-to-api", "from": "fe_spa", "to": "fe_api", "label": "export cmd" },
+    { "id": "api-to-nginx", "from": "fe_api", "to": "be_nginx", "label": "POST /api/pdf", "variant": "emphasis" },
+    { "id": "nginx-to-express", "from": "be_nginx", "to": "be_express", "label": "proxy_pass" },
+    { "id": "express-to-service", "from": "be_express", "to": "be_service", "label": "generatePdf()" },
+    { "id": "service-to-tmp", "from": "be_service", "to": "be_tmp", "label": "write assets" },
+    { "id": "service-to-pandoc", "from": "be_service", "to": "be_pandoc", "label": "exec pandoc" },
+    { "id": "service-to-typst", "from": "be_service", "to": "be_typst", "label": "exec typst", "variant": "emphasis" },
+    { "id": "typst-to-fonts", "from": "be_typst", "to": "be_fonts", "label": "embed fonts" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Client Tier (Local-First)",
+      "items": [
+        "Zero server login or cloud database required",
+        "Documents persist completely in browser IndexedDB (paperflow_db)",
+        "Sub-16ms live preview with KaTeX math rendering and A4 page simulation"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Backend Tier (Stateless Vector Engine)",
+      "items": [
+        "Express 4 server routes /api/pdf and /api/typst requests",
+        "Ephemeral filesystem scratchpads created in os.tmpdir() per request",
+        "Pandoc v3.6.3 transforms extended Markdown into Typst syntax",
+        "Typst v0.13.0 renders publication-quality PDF in <350ms"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Privacy & Security Posture",
+      "items": [
+        "No telemetry, tracking, or document storage on backend servers",
+        "Temporary workspaces securely destroyed via finally cleanup blocks",
+        "25MB payload threshold and 5MB Markdown size validation",
+        "Runs under unprivileged 'paperflow' system user inside Docker"
+      ]
+    }
+  ]
+}

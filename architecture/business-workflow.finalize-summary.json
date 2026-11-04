@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\09-business-workflow.candidate.json",
+    "sha256": "915363f1772adc071ed27c54956325aff8e05f6b438e2c9036281b923fdd53f2",
+    "bytes": 5041
+  },
+  "artifact": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\architecture\\business-workflow.html",
+    "sha256": "7f54f8d5bd78531da992c674b9e64e9dbc5f06a8999ac0d07725bfb7c632e19d",
+    "bytes": 843950
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\business-workflow.finalize.json",
+    "summaryReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\business-workflow.finalize-summary.json",
+    "browserCheckReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\business-workflow.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-04T09:12:27.984Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 4391,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

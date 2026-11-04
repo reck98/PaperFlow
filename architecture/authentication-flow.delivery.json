@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "b13e35aa-24b9-40d0-8588-dd795727e4b1",
+  "status": "current",
+  "command": "deliver",
+  "type": "lifecycle",
+  "input": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\06-authentication-flow.candidate.json",
+  "output": "E:\\Development\\Projects\\PaperFlow\\architecture\\authentication-flow.html",
+  "specification": {
+    "sha256": "2f5f45ca3cf71d4c6fb9b272695fb5085aa61dc4e853c8b708a05ea65df5be88",
+    "bytes": 4105
+  },
+  "artifact": {
+    "sha256": "5ec50fc918d827078864a487ab079f6259b22fd18b13c66339c1eae14dea03cc",
+    "bytes": 845741
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PaperFlow Deployment & Infrastructure Architecture",
+    "subtitle": "Multi-Stage Docker Pipeline, Container Hardening, Reverse Proxy, & Cloud Topologies",
+    "output": "architecture/deployment-architecture.html",
+    "quality_profile": "showcase",
+    "animation": "trace"
+  },
+  "components": [
+    {
+      "id": "dev_client",
+      "type": "frontend",
+      "label": "Local Dev Client",
+      "sublabel": "Vite HMR :5173",
+      "pos": [40, 100],
+      "size": [150, 60],
+      "icon": "frontend"
+    },
+    {
+      "id": "dev_backend",
+      "type": "backend",
+      "label": "Local Dev Server",
+      "sublabel": "tsx watch :3001 + ./bin",
+      "pos": [240, 100],
+      "size": [160, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "docker_build",
+      "type": "cloud",
+      "label": "Multi-Stage Build",
+      "sublabel": "docker/Dockerfile (3 stages)",
+      "pos": [470, 100],
+      "size": [170, 60],
+      "icon": "cloud"
+    },
+    {
+      "id": "render_srv",
+      "type": "cloud",
+      "label": "Render.com Cloud",
+      "sublabel": "render.yaml : Free Web Svc",
+      "pos": [710, 100],
+      "size": [170, 60]
+    },
+    {
+      "id": "ext_client",
+      "type": "external",
+      "label": "Public Clients",
+      "sublabel": "HTTPS :443 / HTTP :80",
+      "pos": [40, 240],
+      "size": [150, 60],
+      "icon": "person"
+    },
+    {
+      "id": "nginx_proxy",
+      "type": "cloud",
+      "label": "Nginx Reverse Proxy",
+      "sublabel": "docker/nginx.conf : Port 80",
+      "pos": [240, 240],
+      "size": [160, 60],
+      "icon": "cloud"
+    },
+    {
+      "id": "dc_service",
+      "type": "cloud",
+      "label": "Docker Compose",
+      "sublabel": "paperflow-app : 2CPU/2GB",
+      "pos": [470, 240],
+      "size": [170, 60],
+      "tag": "orchestration"
+    },
+    {
+      "id": "app_runtime",
+      "type": "backend",
+      "label": "Node 22 Production",
+      "sublabel": "user: paperflow :3000",
+      "pos": [710, 240],
+      "size": [170, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "cli_engines",
+      "type": "backend",
+      "label": "Pandoc & Typst CLI",
+      "sublabel": "v3.6.3 & v0.13.0 + Fonts",
+      "pos": [950, 240],
+      "size": [170, 60]
+    },
+    {
+      "id": "fs_scratch",
+      "type": "database",
+      "label": "Scratch Filesystem",
+      "sublabel": "os.tmpdir()/paperflow-*",
+      "pos": [1180, 240],
+      "size": [160, 60],
+      "tag": "auto-cleaned",
+      "icon": "database"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Local Development & Build Stage",
+      "wraps": ["dev_client", "dev_backend", "docker_build"]
+    },
+    {
+      "kind": "region",
+      "label": "Production Container Runtime (Debian Bookworm Slim)",
+      "wraps": ["app_runtime", "cli_engines", "fs_scratch"]
+    }
+  ],
+  "connections": [
+    { "id": "dev-to-build", "from": "dev_backend", "to": "docker_build", "label": "docker build" },
+    { "id": "build-to-render", "from": "docker_build", "to": "render_srv", "label": "deploy image" },
+    { "id": "client-to-nginx", "from": "ext_client", "to": "nginx_proxy", "label": "HTTP request", "variant": "emphasis" },
+    { "id": "nginx-to-compose", "from": "nginx_proxy", "to": "dc_service", "label": "upstream :3000" },
+    { "id": "compose-to-runtime", "from": "dc_service", "to": "app_runtime", "label": "runs container", "variant": "emphasis" },
+    { "id": "runtime-to-engines", "from": "app_runtime", "to": "cli_engines", "label": "child_process" },
+    { "id": "engines-to-scratch", "from": "cli_engines", "to": "fs_scratch", "label": "compile PDF", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Build Architecture",
+      "items": [
+        "Stage 1 (frontend-builder): Node 22 slim + pnpm compiles React SPA",
+        "Stage 2 (backend-builder): Node 22 slim + tsc compiles TypeScript server",
+        "Stage 3 (production): Debian Bookworm with native Pandoc 3.6.3 and Typst 0.13.0"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Hardening & Resource Constraints",
+      "items": [
+        "Unprivileged system user 'paperflow' runs the Node.js process",
+        "Docker Compose allocates 2.0 CPUs and 2048MB memory ceiling",
+        "Built-in healthcheck polls /api/health with 30s interval and 10s timeout"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Deployment Options",
+      "items": [
+        "Production PaaS via Render.com Web Service definition (render.yaml)",
+        "On-prem / self-hosted via Docker Compose with Nginx reverse proxy",
+        "Zero external database dependencies or cloud credentials needed"
+      ]
+    }
+  ]
+}

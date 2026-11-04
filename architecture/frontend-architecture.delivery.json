@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "b636fd35-01c8-4346-81bb-0ccd9bbc3004",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\03-frontend-architecture.candidate.json",
+  "output": "E:\\Development\\Projects\\PaperFlow\\architecture\\frontend-architecture.html",
+  "specification": {
+    "sha256": "25499d71b09d90b5762ca9c82197b0243cd75ac5495cd6a33d61051a558dde00",
+    "bytes": 5955
+  },
+  "artifact": {
+    "sha256": "fde31b5f858f4e50c334595d3376ec48f4f332561cbdd0656df57acdfb2e9ec6",
+    "bytes": 858978
+  }
+}

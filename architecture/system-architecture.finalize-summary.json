@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\01-system-architecture.candidate.json",
+    "sha256": "1723ea2ad7d779b8150fe988dbff154c927acc29606b069fdc7633b4c7008e92",
+    "bytes": 5880
+  },
+  "artifact": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\architecture\\system-architecture.html",
+    "sha256": "525f17f48fa489e5d5dc9fb1cb0365faf030cc131932acce7551ff59f646fcef",
+    "bytes": 856426
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "fail"
+  },
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/evidence-path-conflict",
+      "severity": "error",
+      "message": "browser-check will not replace the existing unowned evidence path \"E:\\Development\\Projects\\PaperFlow\\architecture\\system-architecture.browser-check.json\".",
+      "subject": {
+        "artifact": "E:\\Development\\Projects\\PaperFlow\\architecture\\system-architecture.html",
+        "evidencePath": "E:\\Development\\Projects\\PaperFlow\\architecture\\system-architecture.browser-check.json"
+      },
+      "evidence": {
+        "reason": {
+          "code": "ownership-artifact-mismatch"
+        }
+      },
+      "supportedFixes": [
+        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\system-architecture.finalize.json",
+    "summaryReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\system-architecture.finalize-summary.json",
+    "browserCheckReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\system-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-04T09:12:27.984Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 1371,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  }
+}

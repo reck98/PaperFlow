@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "End-to-End PDF Export Journey",
+    "output": "architecture/request-journey.html",
+    "column_fit": "spread",
+    "quality_profile": "showcase",
+    "animation": "trace"
+  },
+  "participants": [
+    { "id": "user", "type": "external", "label": "User / Author", "sublabel": "Browser Session" },
+    { "id": "react", "type": "frontend", "label": "React SPA", "sublabel": "ExportModal.tsx" },
+    { "id": "api_client", "type": "frontend", "label": "API Client", "sublabel": "services/api.ts" },
+    { "id": "nginx", "type": "cloud", "label": "Nginx Proxy", "sublabel": "Reverse Proxy :80" },
+    { "id": "express", "type": "backend", "label": "Express Router", "sublabel": "POST /api/pdf" },
+    { "id": "pdf_svc", "type": "backend", "label": "PDF Service", "sublabel": "pdfService.ts" },
+    { "id": "fs_tmp", "type": "database", "label": "Temp Scratch", "sublabel": "os.tmpdir()/uuid" },
+    { "id": "pandoc", "type": "backend", "label": "Pandoc CLI", "sublabel": "v3.6.3 Typst Writer" },
+    { "id": "typst", "type": "backend", "label": "Typst CLI", "sublabel": "v0.13.0 Compiler" }
+  ],
+  "segments": [
+    { "from": 140, "to": 280, "label": "Client Trigger & Transport" },
+    { "from": 290, "to": 525, "label": "Ephemeral Conversion Pipeline" },
+    { "from": 535, "to": 745, "label": "Stream Delivery & Client Render" }
+  ],
+  "messages": [
+    { "id": "open-export", "from": "user", "to": "react", "y": 160, "label": "Click 'Export PDF'", "variant": "default" },
+    { "id": "call-api", "from": "react", "to": "api_client", "y": 195, "label": "exportPdfApi(params)", "variant": "default" },
+    { "id": "http-post", "from": "api_client", "to": "nginx", "y": 230, "label": "POST /api/pdf (JSON)", "variant": "emphasis" },
+    { "id": "proxy-pass", "from": "nginx", "to": "express", "y": 265, "label": "proxy_pass :3000", "variant": "default" },
+    { "id": "dispatch-gen", "from": "express", "to": "pdf_svc", "y": 300, "label": "generatePdf(request)", "variant": "emphasis" },
+    { "id": "mkdir-tmp", "from": "pdf_svc", "to": "fs_tmp", "y": 335, "label": "write assets & input.md", "variant": "default" },
+    { "id": "exec-pandoc", "from": "pdf_svc", "to": "pandoc", "y": 370, "label": "exec pandoc (md -> typst)", "variant": "emphasis" },
+    { "id": "write-body", "from": "pandoc", "to": "fs_tmp", "y": 405, "label": "emit body.typ", "variant": "default" },
+    { "id": "wrap-typst", "from": "pdf_svc", "to": "fs_tmp", "y": 440, "label": "compose document.typ", "variant": "default" },
+    { "id": "exec-typst", "from": "pdf_svc", "to": "typst", "y": 475, "label": "exec typst compile", "variant": "emphasis" },
+    { "id": "emit-pdf", "from": "typst", "to": "fs_tmp", "y": 510, "label": "emit document.pdf", "variant": "default" },
+    { "id": "read-cleanup", "from": "fs_tmp", "to": "pdf_svc", "y": 545, "label": "read buffer & rm -rf temp", "variant": "return" },
+    { "id": "stream-express", "from": "pdf_svc", "to": "express", "y": 580, "label": "return { buffer }", "variant": "return" },
+    { "id": "stream-nginx", "from": "express", "to": "nginx", "y": 615, "label": "200 application/pdf", "variant": "return" },
+    { "id": "stream-client", "from": "nginx", "to": "api_client", "y": 650, "label": "HTTP response stream", "variant": "return" },
+    { "id": "create-blob", "from": "api_client", "to": "react", "y": 685, "label": "Blob instance", "variant": "return" },
+    { "id": "trigger-dl", "from": "react", "to": "user", "y": 720, "label": "download & preview", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "react", "from": 160, "to": 730, "type": "frontend" },
+    { "participant": "api_client", "from": 195, "to": 690, "type": "frontend" },
+    { "participant": "nginx", "from": 230, "to": 655, "type": "cloud" },
+    { "participant": "express", "from": 265, "to": 620, "type": "backend" },
+    { "participant": "pdf_svc", "from": 300, "to": 585, "type": "backend" },
+    { "participant": "pandoc", "from": 370, "to": 410, "type": "backend" },
+    { "participant": "typst", "from": 475, "to": 515, "type": "backend" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Sub-Second Turnaround",
+      "items": [
+        "Typst compilation is natively fast (typically 80-250ms)",
+        "Zero disk persistence bottleneck beyond OS ramdisk temp files",
+        "Direct binary stream avoids intermediate cloud upload delays"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Guaranteed Cleanup",
+      "items": [
+        "Ephemeral directories generated using cryptographically random UUIDs",
+        "A try...finally block guarantees complete directory destruction",
+        "No customer markdown or intermediate typst files persist on disk"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Dual Delivery Mode",
+      "items": [
+        "Supports both binary vector PDF stream and raw Typst source code",
+        "PDF is embedded directly in an interactive preview iframe",
+        "Download anchor is automatically triggered with document title filename"
+      ]
+    }
+  ]
+}

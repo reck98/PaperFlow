@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\04-backend-architecture.candidate.json",
+    "sha256": "828935fbb9f2e2b2c22d9a2622296738db4ee67375ace42468ba706fb85e4b47",
+    "bytes": 5807
+  },
+  "artifact": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\architecture\\backend-architecture.html",
+    "sha256": "389c41473dc234f1a02cb428b89832c4c155345950f745391798ebcbcfa45ce2",
+    "bytes": 858423
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\backend-architecture.finalize.json",
+    "summaryReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\backend-architecture.finalize-summary.json",
+    "browserCheckReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\backend-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-04T09:12:27.984Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3764,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "routesOverSuggestedBends": 3
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [],
+      "detours": [
+        {
+          "relationship": {
+            "id": "health-to-paths",
+            "from": "rt_health",
+            "to": "ut_paths",
+            "label": "checkBinaries()",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "bends": 3,
+          "stretch": 1.318
+        },
+        {
+          "relationship": {
+            "id": "export-to-svc",
+            "from": "rt_export",
+            "to": "svc_pdf",
+            "label": "generatePdf()",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "bends": 3,
+          "stretch": 1.296
+        },
+        {
+          "relationship": {
+            "id": "svc-to-tmp",
+            "from": "svc_pdf",
+            "to": "fs_tmp",
+            "label": "write assets",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "bends": 3,
+          "stretch": 1.284
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "rt_health → ut_paths needs 3 bends: move node rt_health or ut_paths so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "rt_export → svc_pdf needs 3 bends: move node rt_export or svc_pdf so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "svc_pdf → fs_tmp needs 3 bends: move node svc_pdf or fs_tmp so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

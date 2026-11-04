@@ -1,0 +1,186 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Critical Business Workflow: Markdown-to-PDF Pipeline",
+    "subtitle": "LaTeX Normalization, Pandoc Typst AST Generation, Typst Compilation, & Resource Teardown",
+    "output": "architecture/business-workflow.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "client", "label": "Client Interface" },
+    { "id": "pipeline", "label": "Backend Pipeline" },
+    { "id": "engine", "label": "Typesetting Engines" },
+    { "id": "cleanup", "label": "Storage Lifecycle", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "intake", "label": "1. Intake & Guard", "fromCol": 0, "toCol": 1 },
+    { "id": "conversion", "label": "2. AST & Typst Generation", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "delivery", "label": "3. Vector Build & Delivery", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": [
+    "user_trigger",
+    "req_validate",
+    "scratch_init",
+    "math_preprocess",
+    "pandoc_ast",
+    "typst_compile",
+    "pdf_return"
+  ],
+  "nodes": [
+    {
+      "id": "user_trigger",
+      "lane": "client",
+      "col": 0,
+      "type": "frontend",
+      "label": "Trigger Export",
+      "sublabel": "ExportModal.tsx",
+      "width": 132
+    },
+    {
+      "id": "req_validate",
+      "lane": "pipeline",
+      "col": 1,
+      "type": "security",
+      "label": "Payload Guard",
+      "sublabel": "5MB cap & type check",
+      "width": 132
+    },
+    {
+      "id": "scratch_init",
+      "lane": "cleanup",
+      "col": 1,
+      "type": "database",
+      "label": "Init Scratch Dir",
+      "sublabel": "os.tmpdir()/uuid",
+      "width": 132
+    },
+    {
+      "id": "math_preprocess",
+      "lane": "pipeline",
+      "col": 2,
+      "type": "backend",
+      "label": "Preprocess Math",
+      "sublabel": "shield & normalize",
+      "width": 132
+    },
+    {
+      "id": "pandoc_ast",
+      "lane": "engine",
+      "col": 3,
+      "type": "backend",
+      "label": "Pandoc CLI v3.6.3",
+      "sublabel": "emit body.typ",
+      "width": 132
+    },
+    {
+      "id": "typst_compile",
+      "lane": "engine",
+      "col": 4,
+      "type": "backend",
+      "label": "Typst CLI v0.13.0",
+      "sublabel": "typst compile -> pdf",
+      "width": 132
+    },
+    {
+      "id": "pdf_return",
+      "lane": "client",
+      "col": 5,
+      "type": "frontend",
+      "label": "Deliver & Preview",
+      "sublabel": "Blob -> objectURL",
+      "width": 132
+    },
+    {
+      "id": "scratch_purge",
+      "lane": "cleanup",
+      "col": 5,
+      "type": "database",
+      "label": "Finally Cleanup",
+      "sublabel": "fs.rmSync(tempDir)",
+      "width": 132
+    }
+  ],
+  "edges": [
+    {
+      "id": "user-to-val",
+      "from": "user_trigger",
+      "to": "req_validate",
+      "label": "POST /api/pdf",
+      "variant": "emphasis"
+    },
+    {
+      "id": "val-to-scratch",
+      "from": "req_validate",
+      "to": "scratch_init",
+      "label": "mkdir temp",
+      "variant": "default"
+    },
+    {
+      "id": "scratch-to-math",
+      "from": "scratch_init",
+      "to": "math_preprocess",
+      "label": "write input.md",
+      "variant": "default"
+    },
+    {
+      "id": "math-to-pandoc",
+      "from": "math_preprocess",
+      "to": "pandoc_ast",
+      "label": "body.typ AST",
+      "variant": "emphasis"
+    },
+    {
+      "id": "pandoc-to-typst",
+      "from": "pandoc_ast",
+      "to": "typst_compile",
+      "label": "document.typ",
+      "variant": "emphasis"
+    },
+    {
+      "id": "typst-to-return",
+      "from": "typst_compile",
+      "to": "pdf_return",
+      "label": "stream buffer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "typst-to-purge",
+      "from": "typst_compile",
+      "to": "scratch_purge",
+      "label": "finally block",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mathematical Normalization Precision",
+      "items": [
+        "Shields fenced and inline code blocks with temporary placeholders",
+        "Normalizes single/double backslashes and converts matrices to display math",
+        "Replaces Markdown escaped asterisks \\* with \\ast to prevent syntax failure"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Compilation Engine Fusion",
+      "items": [
+        "Pandoc v3.6.3 handles extended Markdown AST parsing with native Typst target",
+        "presets/index.ts injects professional typography, running headers, and page margins",
+        "Typst v0.13.0 executes blazing-fast compilation with zero LaTeX engine bloat"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Zero Artifact Footprint",
+      "items": [
+        "All filesystem activities are strictly contained within an ephemeral UUID scratch directory",
+        "A try-finally pattern guarantees recursive folder removal even on failed compilations",
+        "No residual user files, metadata, or logs remain on the host filesystem"
+      ]
+    }
+  ]
+}

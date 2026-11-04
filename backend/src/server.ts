@@ -19,9 +19,29 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 // API routes
 app.use('/api', exportRouter);
 
+// Serve architecture documentation
+const candidateArchitectureDirs = [
+  path.resolve(process.cwd(), 'architecture'),
+  path.resolve(__dirname, '../../architecture'),
+  path.resolve(__dirname, '../../../architecture'),
+];
+const architecturePath = candidateArchitectureDirs.find((d) => fs.existsSync(d));
+if (architecturePath) {
+  console.log(`Serving architecture documentation from ${architecturePath}`);
+  app.use('/architecture', express.static(architecturePath));
+  app.get('/architecture', (_req, res) => {
+    res.sendFile(path.join(architecturePath, 'index.html'));
+  });
+}
+
 // Serve static frontend in production if built
-const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
-if (fs.existsSync(frontendDistPath)) {
+const candidateFrontendDirs = [
+  path.resolve(process.cwd(), 'frontend/dist'),
+  path.resolve(__dirname, '../../frontend/dist'),
+  path.resolve(__dirname, '../../../frontend/dist'),
+];
+const frontendDistPath = candidateFrontendDirs.find((d) => fs.existsSync(d));
+if (frontendDistPath) {
   console.log(`Serving static files from ${frontendDistPath}`);
   app.use(express.static(frontendDistPath));
   app.get('*', (_req, res) => {

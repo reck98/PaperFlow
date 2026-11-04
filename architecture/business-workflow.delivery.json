@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "76623a0d-6ad4-4c1e-a3e5-3e8129eab64c",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\09-business-workflow.candidate.json",
+  "output": "E:\\Development\\Projects\\PaperFlow\\architecture\\business-workflow.html",
+  "specification": {
+    "sha256": "915363f1772adc071ed27c54956325aff8e05f6b438e2c9036281b923fdd53f2",
+    "bytes": 5041
+  },
+  "artifact": {
+    "sha256": "7adf995af9401bffe22d0c4d7a60c0151c12c2c342dfcdc6f39231e602bc54f1",
+    "bytes": 842886
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PaperFlow Frontend Architecture",
+    "subtitle": "Component Hierarchy, Reactive State Management, CodeMirror 6, & Local-First Persistence",
+    "output": "architecture/frontend-architecture.html",
+    "quality_profile": "showcase",
+    "animation": "trace"
+  },
+  "components": [
+    {
+      "id": "entry_main",
+      "type": "frontend",
+      "label": "main.tsx",
+      "sublabel": "ReactDOM.createRoot()",
+      "pos": [40, 220],
+      "size": [130, 60],
+      "icon": "frontend"
+    },
+    {
+      "id": "comp_app",
+      "type": "frontend",
+      "label": "App.tsx",
+      "sublabel": "Router & Dark Mode State",
+      "pos": [210, 220],
+      "size": [140, 60]
+    },
+    {
+      "id": "page_landing",
+      "type": "frontend",
+      "label": "LandingPage.tsx",
+      "sublabel": "Showcase & Sample Picker",
+      "pos": [390, 90],
+      "size": [160, 60]
+    },
+    {
+      "id": "page_editor",
+      "type": "frontend",
+      "label": "EditorPage.tsx",
+      "sublabel": "Document State Controller",
+      "pos": [390, 220],
+      "size": [160, 60],
+      "icon": "frontend"
+    },
+    {
+      "id": "comp_header",
+      "type": "frontend",
+      "label": "Header.tsx",
+      "sublabel": "Title, Presets, Toggles",
+      "pos": [600, 90],
+      "size": [160, 60]
+    },
+    {
+      "id": "modal_export",
+      "type": "frontend",
+      "label": "ExportModal.tsx",
+      "sublabel": "PDF Preview & Download",
+      "pos": [810, 90],
+      "size": [160, 60]
+    },
+    {
+      "id": "svc_api",
+      "type": "backend",
+      "label": "services/api.ts",
+      "sublabel": "Fetch /api/pdf & /health",
+      "pos": [1020, 90],
+      "size": [160, 60]
+    },
+    {
+      "id": "comp_codemirror",
+      "type": "frontend",
+      "label": "CodeEditor.tsx",
+      "sublabel": "CodeMirror 6 Engine",
+      "pos": [600, 220],
+      "size": [160, 60]
+    },
+    {
+      "id": "comp_preview",
+      "type": "frontend",
+      "label": "LivePreview.tsx",
+      "sublabel": "DOM KaTeX & A4 Scaler",
+      "pos": [810, 220],
+      "size": [160, 60]
+    },
+    {
+      "id": "mod_renderer",
+      "type": "frontend",
+      "label": "markdownRenderer.ts",
+      "sublabel": "Marked + Math Normalizer",
+      "pos": [1020, 220],
+      "size": [160, 60]
+    },
+    {
+      "id": "comp_sidebar",
+      "type": "frontend",
+      "label": "Sidebar.tsx",
+      "sublabel": "Docs List & TOC Outline",
+      "pos": [390, 350],
+      "size": [160, 60]
+    },
+    {
+      "id": "svc_db",
+      "type": "database",
+      "label": "services/db.ts",
+      "sublabel": "IndexedDB Adapter & Save",
+      "pos": [600, 350],
+      "size": [160, 60],
+      "icon": "database"
+    },
+    {
+      "id": "storage_idb",
+      "type": "database",
+      "label": "IndexedDB: paperflow_db",
+      "sublabel": "ObjectStore: documents",
+      "pos": [810, 350],
+      "size": [160, 60],
+      "tag": "local-first",
+      "icon": "database"
+    },
+    {
+      "id": "storage_local",
+      "type": "database",
+      "label": "Browser LocalStorage",
+      "sublabel": "activeDocId, theme",
+      "pos": [1020, 350],
+      "size": [160, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Dual-Pane Editing Workspace",
+      "wraps": ["comp_codemirror", "comp_preview", "mod_renderer"]
+    },
+    {
+      "kind": "region",
+      "label": "Client-Side Persistence Subsystem",
+      "wraps": ["svc_db", "storage_idb", "storage_local"]
+    }
+  ],
+  "connections": [
+    { "id": "entry-to-app", "from": "entry_main", "to": "comp_app", "label": "mount" },
+    { "id": "app-to-landing", "from": "comp_app", "to": "page_landing", "label": "view=landing" },
+    { "id": "app-to-editor", "from": "comp_app", "to": "page_editor", "label": "view=editor", "variant": "emphasis" },
+    { "id": "editor-to-header", "from": "page_editor", "to": "comp_header", "label": "header state" },
+    { "id": "header-to-export", "from": "comp_header", "to": "modal_export", "label": "trigger export" },
+    { "id": "export-to-api", "from": "modal_export", "to": "svc_api", "label": "POST /api/pdf", "variant": "emphasis" },
+    { "id": "editor-to-codemirror", "from": "page_editor", "to": "comp_codemirror", "label": "markdown doc", "variant": "emphasis" },
+    { "id": "codemirror-to-preview", "from": "comp_codemirror", "to": "comp_preview", "label": "live sync", "variant": "emphasis" },
+    { "id": "preview-to-renderer", "from": "comp_preview", "to": "mod_renderer", "label": "KaTeX AST" },
+    { "id": "editor-to-sidebar", "from": "page_editor", "to": "comp_sidebar", "label": "active doc" },
+    { "id": "editor-to-db", "from": "page_editor", "to": "svc_db", "label": "autosave doc", "variant": "dashed" },
+    { "id": "svc-to-idb", "from": "svc_db", "to": "storage_idb", "label": "put/get doc", "variant": "emphasis" },
+    { "id": "svc-to-local", "from": "svc_db", "to": "storage_local", "label": "sync activeId" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "State Architecture",
+      "items": [
+        "EditorPage holds single source of truth for documents and active ID",
+        "React refs protect async debounced saves against stale closure bugs",
+        "Split-pane layout supports 50/50, editor-only, and preview-only modes"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Rich Preview & Editor",
+      "items": [
+        "CodeMirror 6 provides syntax highlighting and custom dark theme",
+        "Live KaTeX preview extracts display math, matrices, and LaTeX align",
+        "Outline jump navigator synchronizes headings dynamically"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Local-First Storage",
+      "items": [
+        "Full offline support via browser IndexedDB",
+        "No network roundtrips required for document creation, editing, or saving",
+        "Sample documents automatically bootstrapped on initial launch"
+      ]
+    }
+  ]
+}

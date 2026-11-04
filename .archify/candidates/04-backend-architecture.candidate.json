@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PaperFlow Backend Architecture",
+    "subtitle": "Express HTTP Pipeline, AST Transformation, Binary Resolution, & Ephemeral Typesetting",
+    "output": "architecture/backend-architecture.html",
+    "quality_profile": "showcase",
+    "animation": "trace"
+  },
+  "components": [
+    {
+      "id": "srv_entry",
+      "type": "backend",
+      "label": "server.ts",
+      "sublabel": "Express 4 + Port 3001",
+      "pos": [40, 220],
+      "size": [150, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "mw_static",
+      "type": "frontend",
+      "label": "express.static()",
+      "sublabel": "Serve frontend/dist",
+      "pos": [240, 90],
+      "size": [150, 60]
+    },
+    {
+      "id": "mw_cors",
+      "type": "security",
+      "label": "cors()",
+      "sublabel": "CORS Headers Guard",
+      "pos": [240, 220],
+      "size": [150, 60],
+      "icon": "security"
+    },
+    {
+      "id": "mw_body",
+      "type": "backend",
+      "label": "express.json()",
+      "sublabel": "25MB Body Parser",
+      "pos": [450, 220],
+      "size": [150, 60]
+    },
+    {
+      "id": "mw_err",
+      "type": "backend",
+      "label": "Error Middleware",
+      "sublabel": "HTTP 500 Catcher",
+      "pos": [40, 350],
+      "size": [150, 60]
+    },
+    {
+      "id": "rt_health",
+      "type": "backend",
+      "label": "/api/health",
+      "sublabel": "Binary Health & Presets",
+      "pos": [450, 90],
+      "size": [150, 60]
+    },
+    {
+      "id": "ut_paths",
+      "type": "backend",
+      "label": "utils/paths.ts",
+      "sublabel": "findBinary() Discovery",
+      "pos": [660, 90],
+      "size": [160, 60]
+    },
+    {
+      "id": "rt_export",
+      "type": "backend",
+      "label": "routes/export.ts",
+      "sublabel": "POST /api/pdf & /typst",
+      "pos": [660, 220],
+      "size": [160, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "ut_math",
+      "type": "backend",
+      "label": "Math Normalizer",
+      "sublabel": "preprocessMathForPandoc()",
+      "pos": [660, 350],
+      "size": [160, 60]
+    },
+    {
+      "id": "svc_pdf",
+      "type": "backend",
+      "label": "pdfService.ts",
+      "sublabel": "generatePdf() Controller",
+      "pos": [880, 220],
+      "size": [160, 60],
+      "icon": "backend"
+    },
+    {
+      "id": "ut_preset",
+      "type": "backend",
+      "label": "presets/index.ts",
+      "sublabel": "generateTypstWrapper()",
+      "pos": [880, 350],
+      "size": [160, 60]
+    },
+    {
+      "id": "eng_pandoc",
+      "type": "backend",
+      "label": "Pandoc CLI v3.6.3",
+      "sublabel": "Markdown -> Typst AST",
+      "pos": [1100, 90],
+      "size": [160, 60]
+    },
+    {
+      "id": "fs_tmp",
+      "type": "database",
+      "label": "Ephemeral Workdir",
+      "sublabel": "os.tmpdir()/paperflow-*",
+      "pos": [1100, 220],
+      "size": [160, 60],
+      "tag": "auto-cleaned",
+      "icon": "database"
+    },
+    {
+      "id": "eng_typst",
+      "type": "backend",
+      "label": "Typst CLI v0.13.0",
+      "sublabel": "Vector Typesetting Core",
+      "pos": [1100, 350],
+      "size": [160, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Express Middleware Stack",
+      "wraps": ["mw_cors", "mw_body"]
+    },
+    {
+      "kind": "region",
+      "label": "External Typesetting Engine & Scratch FS",
+      "wraps": ["eng_pandoc", "fs_tmp", "eng_typst"]
+    }
+  ],
+  "connections": [
+    { "id": "srv-to-cors", "from": "srv_entry", "to": "mw_cors", "label": "app.use()" },
+    { "id": "srv-to-static", "from": "srv_entry", "to": "mw_static", "label": "GET * (prod)" },
+    { "id": "cors-to-body", "from": "mw_cors", "to": "mw_body", "label": "parse stream" },
+    { "id": "body-to-export", "from": "mw_body", "to": "rt_export", "label": "route /api", "variant": "emphasis" },
+    { "id": "body-to-health", "from": "mw_body", "to": "rt_health", "label": "route /health" },
+    { "id": "health-to-paths", "from": "rt_health", "to": "ut_paths", "label": "checkBinaries()" },
+    { "id": "export-to-svc", "from": "rt_export", "to": "svc_pdf", "label": "generatePdf()", "variant": "emphasis" },
+    { "id": "svc-to-math", "from": "svc_pdf", "to": "ut_math", "label": "sanitize LaTeX" },
+    { "id": "svc-to-preset", "from": "svc_pdf", "to": "ut_preset", "label": "apply styles" },
+    { "id": "svc-to-tmp", "from": "svc_pdf", "to": "fs_tmp", "label": "write assets" },
+    { "id": "svc-to-pandoc", "from": "svc_pdf", "to": "eng_pandoc", "label": "exec pandoc" },
+    { "id": "svc-to-typst", "from": "svc_pdf", "to": "eng_typst", "label": "exec typst", "variant": "emphasis" },
+    { "id": "srv-to-err", "from": "srv_entry", "to": "mw_err", "label": "catch all", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "HTTP Processing Pipeline",
+      "items": [
+        "CORS enabled across all origins for development and embedding flexibility",
+        "Body parser permits up to 25MB payloads for base64 image attachments",
+        "Dual endpoint architecture: /api/pdf streams binary, /api/typst returns code"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Engine Subsystem",
+      "items": [
+        "utils/paths.ts locates binaries across env vars, local bin/, and system PATH",
+        "Pandoc v3.6.3 converts complex GitHub/LaTeX markdown to Typst AST",
+        "Typst v0.13.0 executes parallel compilation directly into PDF bytes"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Lifecycle & Fault Tolerance",
+      "items": [
+        "Non-zero exit codes from CLI processes throw sanitized errors",
+        "Temporary folder paths are masked before error responses leave the server",
+        "Global error middleware prevents unhandled exceptions from crashing Node"
+      ]
+    }
+  ]
+}

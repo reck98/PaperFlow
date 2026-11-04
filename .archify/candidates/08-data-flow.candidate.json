@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "PaperFlow End-to-End Data Flow Architecture",
+    "subtitle": "From Raw Keystroke Intake to Reactive KaTeX DOM & Pandoc/Typst Vector PDF Emission",
+    "output": "architecture/data-flow.html",
+    "animation": "trace",
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    { "label": "1. Source & Ingest" },
+    { "label": "2. Normalize & Guard" },
+    { "label": "3. AST Transform" },
+    { "label": "4. Typeset & Compile" },
+    { "label": "5. Deliver & Consume" }
+  ],
+  "nodes": [
+    { "id": "src_user", "type": "external", "label": "User Markdown", "sublabel": "Keystroke Stream", "stage": 0, "row": 0, "tag": "source" },
+    { "id": "src_idb", "type": "database", "label": "IndexedDB Store", "sublabel": "paperflow_db : docs", "stage": 0, "row": 1, "tag": "local" },
+    { "id": "norm_math", "type": "frontend", "label": "Live KaTeX DOM", "sublabel": "extractOutline & math", "stage": 1, "row": 0, "tag": "client" },
+    { "id": "guard_express", "type": "security", "label": "Gateway Guard", "sublabel": "25MB cap & type check", "stage": 1, "row": 1, "tag": "policy" },
+    { "id": "be_math_prep", "type": "backend", "label": "Math Normalizer", "sublabel": "code guard & TeX fix", "stage": 2, "row": 0, "tag": "backend" },
+    { "id": "eng_pandoc", "type": "backend", "label": "Pandoc AST Engine", "sublabel": "input.md -> body.typ", "stage": 2, "row": 1, "tag": "cli" },
+    { "id": "be_preset_wrap", "type": "backend", "label": "Typst Synthesizer", "sublabel": "presets/index.ts", "stage": 3, "row": 0, "tag": "backend" },
+    { "id": "eng_typst", "type": "backend", "label": "Typst Vector Core", "sublabel": "typst compile -> pdf", "stage": 3, "row": 1, "tag": "cli" },
+    { "id": "out_preview", "type": "frontend", "label": "Live Page View", "sublabel": "A4 Page Emulation", "stage": 4, "row": 0, "tag": "interactive" },
+    { "id": "out_pdf", "type": "external", "label": "Vector PDF Stream", "sublabel": "Downloadable Binary", "stage": 4, "row": 1, "tag": "artifact" }
+  ],
+  "flows": [
+    { "id": "flow-user-norm", "from": "src_user", "to": "norm_math", "label": "keystrokes", "variant": "default" },
+    { "id": "flow-user-idb", "from": "src_user", "to": "src_idb", "label": "autosave", "variant": "dashed" },
+    { "id": "flow-norm-prev", "from": "norm_math", "to": "out_preview", "label": "instant view", "variant": "emphasis" },
+    { "id": "flow-idb-guard", "from": "src_idb", "to": "guard_express", "label": "POST JSON", "variant": "emphasis" },
+    { "id": "flow-guard-prep", "from": "guard_express", "to": "be_math_prep", "label": "clean math", "variant": "default" },
+    { "id": "flow-prep-pandoc", "from": "be_math_prep", "to": "eng_pandoc", "label": "sanitized md", "variant": "emphasis" },
+    { "id": "flow-pandoc-wrap", "from": "eng_pandoc", "to": "be_preset_wrap", "label": "body.typ AST", "variant": "default" },
+    { "id": "flow-wrap-typst", "from": "be_preset_wrap", "to": "eng_typst", "label": "document.typ", "variant": "emphasis" },
+    { "id": "flow-typst-pdf", "from": "eng_typst", "to": "out_pdf", "label": "vector binary", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Dual Rendering Pipeline",
+      "items": [
+        "Path 1 (Browser DOM): Marked + KaTeX renders in <16ms for interactive authoring",
+        "Path 2 (Vector Engine): Pandoc + Typst compiles formal vector PDFs in <350ms",
+        "Both pipelines share identical math normalization patterns for WYSIWYG parity"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Data Protection & Shielding",
+      "items": [
+        "Code blocks are extracted and replaced with placeholders before math normalization",
+        "Prevents programming language characters like $, &, and \\ from triggering math syntax",
+        "Base64 embedded images are extracted and saved directly to the scratch disk"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Delivery & Clean Destruction",
+      "items": [
+        "Backend pipes PDF binary stream directly with Content-Disposition headers",
+        "Ephemeral filesystem scratchpads destroyed immediately upon stream completion",
+        "Browser receives Blob, instantiates object URL, and triggers instant download"
+      ]
+    }
+  ]
+}

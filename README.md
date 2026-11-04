@@ -31,6 +31,7 @@ A modern, high-performance Markdown editor and vector PDF publishing tool with f
 - [Features](#features)
 - [Screenshots](#screenshots)
 - [Architecture](#architecture)
+- [Interactive Diagrams (Live)](https://paperflow.reck98.in/architecture/)
 - [Application Flow](#application-flow)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -98,6 +99,8 @@ You can explore the editor, test mathematical typesetting with sample papers, an
 ---
 
 ## Architecture
+
+> 🌐 **Interactive Architecture Suite**: Explore the full production architecture diagrams, request sequences, and entity ERDs live at **[paperflow.reck98.in/architecture](https://paperflow.reck98.in/architecture/)** or inspect the technical dossier in [**`architecture/README.md`**](architecture/README.md).
 
 Paperflow separates client-side editing from backend document compilation:
 

@@ -1,0 +1,66 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "PaperFlow Security, Session & Data Lifecycle",
+    "subtitle": "Local-First Anonymous Trust Model, Input Validation Gates, & Ephemeral Container Sandboxing",
+    "output": "architecture/authentication-flow.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase"
+  },
+  "mainPath": ["client_init", "local_sandbox", "export_intake", "payload_check", "ephemeral_exec", "purged_success"],
+  "states": [
+    { "id": "client_init", "type": "start", "label": "Client Session", "sublabel": "Anonymous Auth", "tag": "local", "step": "01" },
+    { "id": "local_sandbox", "type": "active", "label": "Local Store", "sublabel": "IndexedDB Isolation", "tag": "offline", "step": "02" },
+    { "id": "export_intake", "type": "decision", "label": "Gateway", "sublabel": "CORS & Body Check", "tag": "intake", "step": "03" },
+    { "id": "payload_check", "type": "decision", "label": "Validator", "sublabel": "5MB Cap & Type", "tag": "policy", "step": "04" },
+    { "id": "ephemeral_exec", "type": "active", "label": "Sandbox", "sublabel": "Paperflow User", "tag": "docker", "step": "05" },
+    { "id": "purged_success", "type": "success", "label": "Purged", "sublabel": "Zero Retention", "tag": "delivered", "step": "06" },
+    { "id": "rejected_size", "type": "failure", "label": "Size Error", "sublabel": "HTTP 400 >5MB", "tag": "terminal" },
+    { "id": "rejected_type", "type": "failure", "label": "Type Error", "sublabel": "HTTP 400 Malformed", "tag": "terminal" },
+    { "id": "compile_error", "type": "failure", "label": "Engine Error", "sublabel": "HTTP 500 Masked", "tag": "terminal" }
+  ],
+  "transitions": [
+    { "id": "init-sandbox", "from": "client_init", "to": "local_sandbox", "label": "init" },
+    { "id": "sandbox-intake", "from": "local_sandbox", "to": "export_intake", "label": "export" },
+    { "id": "intake-check", "from": "export_intake", "to": "payload_check", "label": "route" },
+    { "id": "check-size", "from": "payload_check", "to": "rejected_size", "label": ">5MB", "variant": "security" },
+    { "id": "check-type", "from": "payload_check", "to": "rejected_type", "label": "invalid", "variant": "security" },
+    { "id": "check-exec", "from": "payload_check", "to": "ephemeral_exec", "label": "pass", "variant": "emphasis" },
+    { "id": "exec-error", "from": "ephemeral_exec", "to": "compile_error", "label": "fault", "variant": "security" },
+    { "id": "exec-success", "from": "ephemeral_exec", "to": "purged_success", "label": "stream", "variant": "emphasis" },
+    { "id": "err-recovery", "from": "compile_error", "to": "local_sandbox", "label": "toast", "variant": "dashed" },
+    { "id": "size-recovery", "from": "rejected_size", "to": "local_sandbox", "label": "alert", "variant": "dashed" },
+    { "id": "type-recovery", "from": "rejected_type", "to": "local_sandbox", "label": "alert", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Zero-Knowledge Authentication Model",
+      "items": [
+        "PaperFlow intentionally avoids login credentials, user accounts, and session tokens",
+        "Document ownership is tied entirely to the user's local browser origin",
+        "Eliminates identity breach vectors, token hijacking, and cloud credential leaks"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Strict Gateway Validation",
+      "items": [
+        "CORS controls protect backend APIs across cross-origin contexts",
+        "Express enforces strict 25MB body limit and 5MB Markdown text boundary",
+        "Data validation rejects non-string payloads before handing off to child processes"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Container Isolation & Zero Retention",
+      "items": [
+        "Backend runs inside Docker as non-root unprivileged system user 'paperflow'",
+        "Cryptographically random temporary directory created per conversion request",
+        "Deterministic finally cleanup destroys the temporary directory immediately after stream"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "dataflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\.archify\\candidates\\08-data-flow.candidate.json",
+    "sha256": "421cf1887859d00c7deadc44f9a36f9abfb9009a137ecf84128c98cb159b1070",
+    "bytes": 4318
+  },
+  "artifact": {
+    "path": "E:\\Development\\Projects\\PaperFlow\\architecture\\data-flow.html",
+    "sha256": "3ab458171057cff8f9794233851c822ae5c3d4e8aa36c629f09c410108e4e5d3",
+    "bytes": 842977
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\data-flow.finalize.json",
+    "summaryReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\data-flow.finalize-summary.json",
+    "browserCheckReceipt": "E:\\Development\\Projects\\PaperFlow\\architecture\\data-flow.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-04T09:12:27.984Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3790,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "routesOverSuggestedBends": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [],
+      "detours": [
+        {
+          "relationship": {
+            "id": "flow-norm-prev",
+            "from": "norm_math",
+            "to": "out_preview",
+            "label": "instant view",
+            "collectionIndex": 2,
+            "artifactIndex": 3
+          },
+          "bends": 4,
+          "stretch": 1.165,
+          "directCorridorBlockers": [
+            {
+              "id": "be_math_prep",
+              "label": "Math Normalizer",
+              "box": [
+                474,
+                128,
+                112,
+                58
+              ]
+            },
+            {
+              "id": "be_preset_wrap",
+              "label": "Typst Synthesizer",
+              "box": [
+                689,
+                128,
+                112,
+                58
+              ]
+            }
+          ]
+        }
+      ],
+      "truncated": false
+    },
+    "repair": "Advisory only: this mode places or routes these relationships itself. Report them; do not remove relationships or meaning to reduce crossings."
+  }
+}
