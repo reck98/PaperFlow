@@ -1,9 +1,12 @@
 import React from 'react';
 import {
   ArrowRight,
+  ArrowUpRight,
   Moon,
   Sun,
-  ChevronRight
+  ChevronRight,
+  Github,
+  Network
 } from 'lucide-react';
 import { SAMPLE_DOCUMENTS } from '../samples';
 
@@ -356,7 +359,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* Footer */}
-      <footer className="mt-auto py-8 sm:py-12 px-4 sm:px-8 md:px-12 text-xs text-gray-500 dark:text-gray-400 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="mt-auto py-8 sm:py-12 px-4 sm:px-8 md:px-12 text-xs text-gray-500 dark:text-gray-400 max-w-7xl mx-auto w-full border-t border-gray-200/60 dark:border-gray-800/60 flex flex-col lg:flex-row items-center justify-between gap-6">
         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
           <div className="flex items-center space-x-2.5 sm:space-x-3">
             <div className="w-6 h-6 rounded bg-amber-700 dark:bg-amber-600 flex items-center justify-center text-white font-serif font-bold text-xs flex-none">
@@ -380,17 +383,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </span>
         </div>
 
-        <div className="flex flex-wrap justify-center sm:justify-end items-center gap-4 sm:gap-6 text-[11px]">
-          <span>Privacy Focused (IndexedDB)</span>
-          <span>Pandoc & Typst Engine</span>
-          <a
-            href="https://github.com/reck98/PaperFlow"
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            GitHub
-          </a>
+        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto justify-center">
+          <div className="hidden xl:flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-500 mr-2 select-none">
+            <span>Privacy Focused (IndexedDB)</span>
+            <span>•</span>
+            <span>Pandoc & Typst Engine</span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+            <a
+              href="/architecture"
+              target="_blank"
+              rel="noreferrer"
+              className="group inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-full text-xs font-medium border border-gray-300/80 dark:border-white/20 bg-white/90 dark:bg-black/90 text-gray-800 dark:text-gray-100 hover:text-amber-800 dark:hover:text-amber-400 hover:border-amber-600/50 dark:hover:border-amber-500/50 hover:bg-amber-50/20 dark:hover:bg-zinc-900 shadow-sm hover:shadow transition-all duration-150 active:scale-[0.98] min-h-[38px] sm:min-h-[40px]"
+            >
+              <Network className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 flex-shrink-0" />
+              <span>System Architecture</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400 group-hover:text-amber-700 dark:group-hover:text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform flex-shrink-0" />
+            </a>
+
+            <a
+              href="https://github.com/reck98/PaperFlow"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub"
+              className="group inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-full text-xs font-medium border border-gray-300/80 dark:border-white/20 bg-white/90 dark:bg-black/90 text-gray-800 dark:text-gray-100 hover:text-gray-950 dark:hover:text-white hover:border-gray-400 dark:hover:border-white/40 hover:bg-gray-50/60 dark:hover:bg-zinc-900 shadow-sm hover:shadow transition-all duration-150 active:scale-[0.98] min-h-[38px] sm:min-h-[40px]"
+            >
+              <Github className="w-3.5 h-3.5 text-gray-700 dark:text-gray-200 group-hover:text-gray-950 dark:group-hover:text-white flex-shrink-0" />
+              <span>GitHub Repository</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform flex-shrink-0" />
+            </a>
+          </div>
         </div>
       </footer>
     </div>
